@@ -19,8 +19,6 @@ package prometheus
 import (
 	"strings"
 	"unicode"
-
-	"github.com/prometheus/prometheus/util/strutil"
 )
 
 // Normalizes the specified label to follow Prometheus label names standard.
@@ -35,7 +33,7 @@ func NormalizeLabel(label string) string {
 		return label
 	}
 
-	label = strutil.SanitizeLabelName(label)
+	label = sanitizeLabelName(label)
 
 	// If label starts with a number, prepend with "key_".
 	if unicode.IsDigit(rune(label[0])) {
