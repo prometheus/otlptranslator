@@ -3,43 +3,43 @@ package otlptranslator
 import "testing"
 
 var labelBenchmarkInputs = []struct {
-	name string
+	name  string
 	label string
 }{
 	{
-		name: "empty label",
+		name:  "empty label",
 		label: "",
 	},
 	{
-		name: "label with colons",
+		name:  "label with colons",
 		label: "label:with:colons",
 	},
 	{
-		name: "label with capital letters",
+		name:  "label with capital letters",
 		label: "LabelWithCapitalLetters",
 	},
 	{
-		name: "label with special characters",
+		name:  "label with special characters",
 		label: "label!with&special$chars)",
 	},
 	{
-		name: "label with foreign characters",
+		name:  "label with foreign characters",
 		label: "label_with_foreign_characters_字符",
 	},
 	{
-		name: "label with dots",
+		name:  "label with dots",
 		label: "label.with.dots",
 	},
 	{
-		name: "label starting with digits",
+		name:  "label starting with digits",
 		label: "123label",
 	},
 	{
-		name: "label starting with underscores",
+		name:  "label starting with underscores",
 		label: "_label_starting_with_underscore",
 	},
 	{
-		name: "label starting with 2 underscores",
+		name:  "label starting with 2 underscores",
 		label: "__label_starting_with_2underscores",
 	},
 }
