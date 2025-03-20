@@ -20,11 +20,11 @@
 package otlptranslator
 
 import (
-	"regexp"
 	"slices"
 	"strings"
 	"unicode"
 
+	"github.com/grafana/regexp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -69,8 +69,8 @@ var unitMap = map[string]string{
 	"%":   "percent",
 }
 
-// The map that translates the "per" unit
-// Example: s => per second (singular)
+// The map that translates the "per" unit.
+// Example: s => per second (singular).
 var perUnitMap = map[string]string{
 	"s":  "second",
 	"m":  "minute",
@@ -207,8 +207,8 @@ func cleanUpUnit(unit string) string {
 	), "_")
 }
 
-// Retrieve the Prometheus "basic" unit corresponding to the specified "basic" unit
-// Returns the specified unit if not found in unitMap
+// Retrieve the Prometheus "basic" unit corresponding to the specified "basic" unit.
+// Returns the specified unit if not found in unitMap.
 func unitMapGetOrDefault(unit string) string {
 	if promUnit, ok := unitMap[unit]; ok {
 		return promUnit
@@ -216,8 +216,8 @@ func unitMapGetOrDefault(unit string) string {
 	return unit
 }
 
-// Retrieve the Prometheus "per" unit corresponding to the specified "per" unit
-// Returns the specified unit if not found in perUnitMap
+// Retrieve the Prometheus "per" unit corresponding to the specified "per" unit.
+// Returns the specified unit if not found in perUnitMap.
 func perUnitMapGetOrDefault(perUnit string) string {
 	if promPerUnit, ok := perUnitMap[perUnit]; ok {
 		return promPerUnit
@@ -225,7 +225,7 @@ func perUnitMapGetOrDefault(perUnit string) string {
 	return perUnit
 }
 
-// Remove the specified value from the slice
+// Remove the specified value from the slice.
 func removeItem(slice []string, value string) []string {
 	newSlice := make([]string, 0, len(slice))
 	for _, sliceEntry := range slice {
@@ -262,7 +262,7 @@ func BuildMetricName(metric pmetric.Metric, namespace string, addMetricSuffixes 
 
 		// Append _total for Counters
 		if metric.Type() == pmetric.MetricTypeSum && metric.Sum().IsMonotonic() {
-			metricName = metricName + "_total"
+			metricName += "_total"
 		}
 
 		// Append _ratio for metrics with unit "1"
@@ -271,7 +271,7 @@ func BuildMetricName(metric pmetric.Metric, namespace string, addMetricSuffixes 
 		// Until these issues have been fixed, we're appending `_ratio` for gauges ONLY
 		// Theoretically, counters could be ratios as well, but it's absurd (for mathematical reasons)
 		if metric.Unit() == "1" && metric.Type() == pmetric.MetricTypeGauge {
-			metricName = metricName + "_ratio"
+			metricName += "_ratio"
 		}
 	}
 	return metricName
