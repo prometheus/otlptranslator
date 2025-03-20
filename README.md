@@ -1,2 +1,2 @@
 # otlp-prometheus-translator
-Experimental dependency-free library to translate string from OTLP format to Prometheus format.  Resources
+Library providing API to convert OTLP metric and attribute names to respectively Prometheus metric and label names.
