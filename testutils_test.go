@@ -17,7 +17,7 @@
 // Provenance-includes-license: Apache-2.0
 // Provenance-includes-copyright: Copyright The OpenTelemetry Authors.
 
-package prometheus
+package otlptranslator
 
 import (
 	"go.opentelemetry.io/collector/pdata/pmetric"

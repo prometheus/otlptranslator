@@ -14,7 +14,7 @@
 // Provenance-includes-license: Apache-2.0
 // Provenance-includes-copyright: Copyright The Prometheus Authors
 
-package prometheus
+package otlptranslator
 
 import (
 	"fmt"
