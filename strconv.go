@@ -22,8 +22,8 @@ import (
 
 var invalidLabelCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
 
-// SanitizeLabelName replaces anything that doesn't match
-// client_label.LabelNameRE with an underscore.
+// sanitizeLabelName replaces anything that doesn't match
+// invalidLabelCharRE with an underscore.
 // Note: this does not handle all Prometheus label name restrictions (such as
 // not starting with a digit 0-9), and hence should only be used if the label
 // name is prefixed with a known valid string.
