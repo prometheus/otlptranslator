@@ -20,7 +20,7 @@
 package otlptranslator
 
 import (
-	"regexp"
+	"github.com/grafana/regexp"
 )
 
 var invalidLabelCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
