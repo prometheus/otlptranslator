@@ -7,130 +7,114 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func BenchmarkBuildMetricNames(b *testing.B) {
-	metrics := createTestMetrics()
+func BenchmarkBuildCompliantMetricName(b *testing.B) {
+	metrics := createTestScenarios()
 
-	for _, workerType := range []string{"BuildCompliantMetricName", "BuildMetricName"} {
+	for _, scenario := range metrics {
 		for _, withSuffixes := range []bool{true, false} {
-			b.Run(fmt.Sprintf("%s/withSuffixes=%t", workerType, withSuffixes), func(b *testing.B) {
-				var worker Worker
-				if workerType == "BuildCompliantMetricName" {
-					worker = &BuildCompliantMetricNameWorker{
-						metrics:      metrics,
-						namespace:    "test_namespace",
-						withSuffixes: withSuffixes,
-					}
-				} else {
-					worker = &BuildMetricNameWorker{
-						metrics:      metrics,
-						namespace:    "test_namespace",
-						withSuffixes: withSuffixes,
-					}
-				}
-
-				b.ResetTimer()
+			b.Run(fmt.Sprintf("%s/withSuffixes=%t", scenario.name, withSuffixes), func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
-					worker.Work()
+					BuildCompliantMetricName(scenario.metric, "test_namespace", withSuffixes)
 				}
 			})
 		}
 	}
 }
 
-type Worker interface {
-	Work()
-}
+func BenchmarkBuildMetricName(b *testing.B) {
+	metrics := createTestScenarios()
 
-type BuildCompliantMetricNameWorker struct {
-	metrics      []pmetric.Metric
-	namespace    string
-	withSuffixes bool
-}
-
-func (w *BuildCompliantMetricNameWorker) Work() {
-	for _, metric := range w.metrics {
-		BuildCompliantMetricName(metric, w.namespace, w.withSuffixes)
+	for _, scenario := range metrics {
+		for _, withSuffixes := range []bool{true, false} {
+			b.Run(fmt.Sprintf("%s/withSuffixes=%t", scenario.name, withSuffixes), func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					BuildMetricName(scenario.metric, "test_namespace", withSuffixes)
+				}
+			})
+		}
 	}
 }
 
-type BuildMetricNameWorker struct {
-	metrics      []pmetric.Metric
-	namespace    string
-	withSuffixes bool
+type Scenario struct {
+	name   string
+	metric pmetric.Metric
 }
 
-func (w *BuildMetricNameWorker) Work() {
-	for _, metric := range w.metrics {
-		BuildMetricName(metric, w.namespace, w.withSuffixes)
-	}
-}
+func createTestScenarios() []Scenario {
+	scenarios := make([]Scenario, 0)
 
-func createTestMetrics() []pmetric.Metric {
-	metrics := make([]pmetric.Metric, 0)
-
-	// Basic metric with no special characters
 	metric := pmetric.NewMetric()
 	metric.SetName("simple_metric")
 	metric.SetUnit("")
 	metric.SetEmptyGauge()
-	metrics = append(metrics, metric)
+	scenarios = append(scenarios, Scenario{
+		name:   "Basic metric with no special characters",
+		metric: metric,
+	})
 
-	// Counter metric (should get _total suffix)
 	metric = pmetric.NewMetric()
 	metric.SetName("counter_metric")
 	metric.SetUnit("")
 	sum := metric.SetEmptySum()
 	sum.SetIsMonotonic(true)
-	metrics = append(metrics, metric)
+	scenarios = append(scenarios, Scenario{
+		name:   "Counter metric",
+		metric: metric,
+	})
 
-	// Metric with unit "1" (should get _ratio suffix for gauge)
 	metric = pmetric.NewMetric()
 	metric.SetName("ratio_metric")
 	metric.SetUnit("1")
 	metric.SetEmptyGauge()
-	metrics = append(metrics, metric)
+	scenarios = append(scenarios, Scenario{
+		name:   "Gauge ratio metric",
+		metric: metric,
+	})
 
-	// Metric with per-unit notation
 	metric = pmetric.NewMetric()
 	metric.SetName("requests")
 	metric.SetUnit("1/s")
 	metric.SetEmptyGauge()
-	metrics = append(metrics, metric)
+	scenarios = append(scenarios, Scenario{
+		name:   "Metric with per-unit suffix notation",
+		metric: metric,
+	})
 
-	// Metric with special characters
 	metric = pmetric.NewMetric()
 	metric.SetName("metric@with#special$chars")
 	metric.SetUnit("")
 	metric.SetEmptyGauge()
-	metrics = append(metrics, metric)
+	scenarios = append(scenarios, Scenario{
+		name:   "Metric with special characters",
+		metric: metric,
+	})
 
-	// Metric starting with digit
 	metric = pmetric.NewMetric()
 	metric.SetName("123metric")
 	metric.SetUnit("")
 	metric.SetEmptyGauge()
-	metrics = append(metrics, metric)
+	scenarios = append(scenarios, Scenario{
+		name:   "Metric starting with digit",
+		metric: metric,
+	})
 
-	// Metric with multiple consecutive underscores
 	metric = pmetric.NewMetric()
 	metric.SetName("metric__with__multiple__underscores")
 	metric.SetUnit("")
 	metric.SetEmptyGauge()
-	metrics = append(metrics, metric)
+	scenarios = append(scenarios, Scenario{
+		name:   "Metric with multiple underscores",
+		metric: metric,
+	})
 
-	// Metric with complex unit
 	metric = pmetric.NewMetric()
 	metric.SetName("memory_usage")
 	metric.SetUnit("MiBy/s")
 	metric.SetEmptyGauge()
-	metrics = append(metrics, metric)
+	scenarios = append(scenarios, Scenario{
+		name:   "Metric with complex unit",
+		metric: metric,
+	})
 
-	// Metric with percentage unit
-	metric = pmetric.NewMetric()
-	metric.SetName("cpu_usage")
-	metric.SetUnit("%")
-	metric.SetEmptyGauge()
-	metrics = append(metrics, metric)
-
-	return metrics
+	return scenarios
 }
