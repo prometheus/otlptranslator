@@ -10,10 +10,10 @@ linters:
     - depguard
     - errorlint
     - exptostd
+    - gci
     - gocritic
     - godot
     - gofumpt
-    - goimports
     - loggercheck
     - misspell
     - nilnesserr
@@ -68,8 +68,11 @@ linters-settings:
             desc: "Use 'errors' or 'fmt' instead of github.com/pkg/errors"
           - pkg: "golang.org/x/exp/slices"
             desc: "Use 'slices' instead."
-  goimports:
-    local-prefixes: github.com/prometheus/otlptranslator
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/prometheus/otlptranslator)
   gofumpt:
     extra-rules: true
   perfsprint:
