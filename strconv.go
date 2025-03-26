@@ -19,17 +19,19 @@
 
 package otlptranslator
 
-import (
-	"github.com/grafana/regexp"
-)
-
-var invalidLabelCharRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
-
 // sanitizeLabelName replaces any characters not valid according to the
 // classical Prometheus label naming scheme with an underscore.
 // Note: this does not handle all Prometheus label name restrictions (such as
 // not starting with a digit 0-9), and hence should only be used if the label
 // name is prefixed with a known valid string.
 func sanitizeLabelName(name string) string {
-	return invalidLabelCharRE.ReplaceAllString(name, "_")
+	var result []rune
+	for _, r := range name {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+			result = append(result, r)
+		} else {
+			result = append(result, '_')
+		}
+	}
+	return string(result)
 }
