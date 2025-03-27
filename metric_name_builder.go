@@ -24,7 +24,6 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/grafana/regexp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -97,9 +96,12 @@ func BuildCompliantMetricName(metric pmetric.Metric, namespace string, addMetric
 	}
 
 	// Simple case (no full normalization, no units, etc.).
-	metricName := strings.Join(strings.FieldsFunc(metric.Name(), func(r rune) bool {
-		return invalidMetricCharRE.MatchString(string(r))
-	}), "_")
+	metricName := strings.TrimFunc(
+		replaceMultipleUnderscores(
+			strings.Map(replaceInvalidMetricChar, metric.Name()),
+		),
+		func(r rune) bool { return r == '_' },
+	)
 
 	// Namespace?
 	if namespace != "" {
@@ -114,11 +116,31 @@ func BuildCompliantMetricName(metric pmetric.Metric, namespace string, addMetric
 	return metricName
 }
 
-var (
-	// Regexp for metric name characters that should be replaced with _.
-	invalidMetricCharRE   = regexp.MustCompile(`[^a-zA-Z0-9:]`)
-	multipleUnderscoresRE = regexp.MustCompile(`__+`)
-)
+func replaceMultipleUnderscores(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+
+	var b strings.Builder
+	b.Grow(len(s)) // Pre-allocate space for the worst case
+
+	// Track if we've seen an underscore to avoid duplicates
+	seenUnderscore := false
+
+	for _, r := range s {
+		if r == '_' {
+			if !seenUnderscore {
+				b.WriteRune(r)
+				seenUnderscore = true
+			}
+		} else {
+			b.WriteRune(r)
+			seenUnderscore = false
+		}
+	}
+
+	return b.String()
+}
 
 // isValidCompliantMetricChar checks if a rune is a valid metric name character (a-z, A-Z, 0-9, :).
 func isValidCompliantMetricChar(r rune) bool {
@@ -216,9 +238,8 @@ func addUnitTokens(nameTokens []string, mainUnitSuffix, perUnitSuffix string) []
 func cleanUpUnit(unit string) string {
 	// Multiple consecutive underscores are replaced with a single underscore.
 	// This is part of the OTel to Prometheus specification: https://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus.
-	return strings.TrimPrefix(multipleUnderscoresRE.ReplaceAllString(
+	return strings.TrimPrefix(replaceMultipleUnderscores(
 		strings.Map(replaceInvalidMetricChar, unit),
-		"_",
 	), "_")
 }
 
