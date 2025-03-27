@@ -115,11 +115,26 @@ func BuildCompliantMetricName(metric pmetric.Metric, namespace string, addMetric
 }
 
 var (
-	nonMetricNameCharRE = regexp.MustCompile(`[^a-zA-Z0-9:]`)
 	// Regexp for metric name characters that should be replaced with _.
 	invalidMetricCharRE   = regexp.MustCompile(`[^a-zA-Z0-9:_]`)
 	multipleUnderscoresRE = regexp.MustCompile(`__+`)
 )
+
+// isValidCompliantMetricChar checks if a rune is a valid metric name character (a-z, A-Z, 0-9, :).
+func isValidCompliantMetricChar(r rune) bool {
+	return (r >= 'a' && r <= 'z') ||
+		(r >= 'A' && r <= 'Z') ||
+		(r >= '0' && r <= '9') ||
+		r == ':'
+}
+
+// replaceInvalidMetricChar replaces invalid metric name characters with underscore.
+func replaceInvalidMetricChar(r rune) rune {
+	if isValidCompliantMetricChar(r) {
+		return r
+	}
+	return '_'
+}
 
 // Build a normalized name for the specified metric.
 func normalizeName(metric pmetric.Metric, namespace string) string {
@@ -128,7 +143,7 @@ func normalizeName(metric pmetric.Metric, namespace string) string {
 	// This is part of the OTel to Prometheus specification: https://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus.
 	nameTokens := strings.FieldsFunc(
 		metric.Name(),
-		func(r rune) bool { return nonMetricNameCharRE.MatchString(string(r)) },
+		func(r rune) bool { return !isValidCompliantMetricChar(r) },
 	)
 
 	mainUnitSuffix, perUnitSuffix := buildUnitSuffixes(metric.Unit())
@@ -202,7 +217,7 @@ func cleanUpUnit(unit string) string {
 	// Multiple consecutive underscores are replaced with a single underscore.
 	// This is part of the OTel to Prometheus specification: https://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus.
 	return strings.TrimPrefix(multipleUnderscoresRE.ReplaceAllString(
-		nonMetricNameCharRE.ReplaceAllString(unit, "_"),
+		strings.Map(replaceInvalidMetricChar, unit),
 		"_",
 	), "_")
 }
