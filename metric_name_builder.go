@@ -116,7 +116,7 @@ func BuildCompliantMetricName(metric pmetric.Metric, namespace string, addMetric
 
 var (
 	// Regexp for metric name characters that should be replaced with _.
-	invalidMetricCharRE   = regexp.MustCompile(`[^a-zA-Z0-9:_]`)
+	invalidMetricCharRE   = regexp.MustCompile(`[^a-zA-Z0-9:]`)
 	multipleUnderscoresRE = regexp.MustCompile(`__+`)
 )
 
