@@ -97,6 +97,8 @@ func BuildCompliantMetricName(metric pmetric.Metric, namespace string, addMetric
 	}
 
 	// Simple case (no full normalization, no units, etc.).
+	// Note that this has the side effect of replacing multiple consecutive underscores with a single underscore.
+	// This is part of the OTel to Prometheus specification: https://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus.
 	metricName := strings.Join(strings.FieldsFunc(metric.Name(), func(r rune) bool {
 		return invalidMetricCharRE.MatchString(string(r))
 	}), "_")
