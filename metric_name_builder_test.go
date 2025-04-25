@@ -122,22 +122,22 @@ func TestNamespace(t *testing.T) {
 }
 
 func TestCleanUpUnit(t *testing.T) {
-	require.Equal(t, "", cleanUpUnit(""))
+	require.Empty(t, cleanUpUnit(""))
 	require.Equal(t, "a_b", cleanUpUnit("a b"))
 	require.Equal(t, "hello_world", cleanUpUnit("hello, world"))
 	require.Equal(t, "hello_you_2", cleanUpUnit("hello you 2"))
 	require.Equal(t, "1000", cleanUpUnit("$1000"))
-	require.Equal(t, "", cleanUpUnit("*+$^=)"))
+	require.Empty(t, cleanUpUnit("*+$^=)"))
 }
 
 func TestUnitMapGetOrDefault(t *testing.T) {
-	require.Equal(t, "", unitMapGetOrDefault(""))
+	require.Empty(t, unitMapGetOrDefault(""))
 	require.Equal(t, "seconds", unitMapGetOrDefault("s"))
 	require.Equal(t, "invalid", unitMapGetOrDefault("invalid"))
 }
 
 func TestPerUnitMapGetOrDefault(t *testing.T) {
-	require.Equal(t, "", perUnitMapGetOrDefault(""))
+	require.Empty(t, perUnitMapGetOrDefault(""))
 	require.Equal(t, "second", perUnitMapGetOrDefault("s"))
 	require.Equal(t, "invalid", perUnitMapGetOrDefault("invalid"))
 }
