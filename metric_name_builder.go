@@ -25,7 +25,6 @@ import (
 	"unicode"
 
 	"github.com/grafana/regexp"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // The map to translate OTLP units to Prometheus units
@@ -90,14 +89,14 @@ var perUnitMap = map[string]string{
 // See rules at https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels,
 // https://prometheus.io/docs/practices/naming/#metric-and-label-naming
 // and https://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus.
-func BuildCompliantMetricName(metric pmetric.Metric, namespace string, addMetricSuffixes bool) string {
+func BuildCompliantMetricName(name, unit string, metricType MetricType, namespace string, addMetricSuffixes bool) string {
 	// Full normalization following standard Prometheus naming conventions
 	if addMetricSuffixes {
-		return normalizeName(metric, namespace)
+		return normalizeName(name, unit, metricType, namespace)
 	}
 
 	// Simple case (no full normalization, no units, etc.).
-	metricName := strings.Join(strings.FieldsFunc(metric.Name(), func(r rune) bool {
+	metricName := strings.Join(strings.FieldsFunc(name, func(r rune) bool {
 		return invalidMetricCharRE.MatchString(string(r))
 	}), "_")
 
@@ -137,20 +136,20 @@ func replaceInvalidMetricChar(r rune) rune {
 }
 
 // Build a normalized name for the specified metric.
-func normalizeName(metric pmetric.Metric, namespace string) string {
+func normalizeName(name, unit string, metricType MetricType, namespace string) string {
 	// Split metric name into "tokens" (of supported metric name runes).
 	// Note that this has the side effect of replacing multiple consecutive underscores with a single underscore.
 	// This is part of the OTel to Prometheus specification: https://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus.
 	nameTokens := strings.FieldsFunc(
-		metric.Name(),
+		name,
 		func(r rune) bool { return !isValidCompliantMetricChar(r) },
 	)
 
-	mainUnitSuffix, perUnitSuffix := buildUnitSuffixes(metric.Unit())
+	mainUnitSuffix, perUnitSuffix := buildUnitSuffixes(unit)
 	nameTokens = addUnitTokens(nameTokens, cleanUpUnit(mainUnitSuffix), cleanUpUnit(perUnitSuffix))
 
 	// Append _total for Counters
-	if metric.Type() == pmetric.MetricTypeSum && metric.Sum().IsMonotonic() {
+	if metricType == MetricTypeMonotonicCounter {
 		nameTokens = append(removeItem(nameTokens, "total"), "total")
 	}
 
@@ -159,7 +158,7 @@ func normalizeName(metric pmetric.Metric, namespace string) string {
 	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aissue+some+metric+units+don%27t+follow+otel+semantic+conventions
 	// Until these issues have been fixed, we're appending `_ratio` for gauges ONLY
 	// Theoretically, counters could be ratios as well, but it's absurd (for mathematical reasons)
-	if metric.Unit() == "1" && metric.Type() == pmetric.MetricTypeGauge {
+	if unit == "1" && metricType == MetricTypeGauge {
 		nameTokens = append(removeItem(nameTokens, "ratio"), "ratio")
 	}
 
@@ -259,25 +258,23 @@ func removeItem(slice []string, value string) []string {
 // If "addMetricSuffixes" is true, it will add them anyway.
 //
 // Please use BuildCompliantMetricName for a metric name that follows Prometheus naming conventions.
-func BuildMetricName(metric pmetric.Metric, namespace string, addMetricSuffixes bool) string {
-	metricName := metric.Name()
-
+func BuildMetricName(name, unit string, metricType MetricType, namespace string, addMetricSuffixes bool) string {
 	if namespace != "" {
-		metricName = namespace + "_" + metricName
+		name = namespace + "_" + name
 	}
 
 	if addMetricSuffixes {
-		mainUnitSuffix, perUnitSuffix := buildUnitSuffixes(metric.Unit())
+		mainUnitSuffix, perUnitSuffix := buildUnitSuffixes(unit)
 		if mainUnitSuffix != "" {
-			metricName = metricName + "_" + mainUnitSuffix
+			name = name + "_" + mainUnitSuffix
 		}
 		if perUnitSuffix != "" {
-			metricName = metricName + "_" + perUnitSuffix
+			name = name + "_" + perUnitSuffix
 		}
 
 		// Append _total for Counters
-		if metric.Type() == pmetric.MetricTypeSum && metric.Sum().IsMonotonic() {
-			metricName += "_total"
+		if metricType == MetricTypeMonotonicCounter {
+			name += "_total"
 		}
 
 		// Append _ratio for metrics with unit "1"
@@ -285,11 +282,11 @@ func BuildMetricName(metric pmetric.Metric, namespace string, addMetricSuffixes 
 		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aissue+some+metric+units+don%27t+follow+otel+semantic+conventions
 		// Until these issues have been fixed, we're appending `_ratio` for gauges ONLY
 		// Theoretically, counters could be ratios as well, but it's absurd (for mathematical reasons)
-		if metric.Unit() == "1" && metric.Type() == pmetric.MetricTypeGauge {
-			metricName += "_ratio"
+		if unit == "1" && metricType == MetricTypeGauge {
+			name += "_ratio"
 		}
 	}
-	return metricName
+	return name
 }
 
 // buildUnitSuffixes builds the main and per unit suffixes for the specified unit
