@@ -16,21 +16,21 @@ package otlptranslator
 // Different types of Sums were introduced based on their metric temporalities.
 // For more details, see:
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums
-type MetricType string
+type MetricType int
 
 const (
 	// MetricTypeNonMonotonicCounter represents a counter that is not monotonically increasing, also known as delta counter.
-	MetricTypeNonMonotonicCounter MetricType = "non-monotonic-counter"
+	MetricTypeNonMonotonicCounter MetricType = iota
 	// MetricTypeMonotonicCounter represents a counter that is monotonically increasing, also known as cumulative counter.
-	MetricTypeMonotonicCounter MetricType = "monotonic-counter"
+	MetricTypeMonotonicCounter
 	// MetricTypeGauge represents a gauge metric.
-	MetricTypeGauge MetricType = "gauge"
+	MetricTypeGauge
 	// MetricTypeHistogram represents a histogram metric.
-	MetricTypeHistogram MetricType = "histogram"
+	MetricTypeHistogram
 	// MetricTypeExponentialHistogram represents an exponential histogram metric.
-	MetricTypeExponentialHistogram MetricType = "exponential-histogram"
+	MetricTypeExponentialHistogram
 	// MetricTypeSummary represents a summary metric.
-	MetricTypeSummary MetricType = "summary"
+	MetricTypeSummary
 	// MetricTypeUnknown represents an unknown metric type.
-	MetricTypeUnknown MetricType = "unknown"
+	MetricTypeUnknown
 )
