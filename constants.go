@@ -19,8 +19,10 @@ package otlptranslator
 type MetricType int
 
 const (
+	// MetricTypeUnknown represents an unknown metric type.
+	MetricTypeUnknown = iota
 	// MetricTypeNonMonotonicCounter represents a counter that is not monotonically increasing, also known as delta counter.
-	MetricTypeNonMonotonicCounter MetricType = iota
+	MetricTypeNonMonotonicCounter
 	// MetricTypeMonotonicCounter represents a counter that is monotonically increasing, also known as cumulative counter.
 	MetricTypeMonotonicCounter
 	// MetricTypeGauge represents a gauge metric.
@@ -31,6 +33,4 @@ const (
 	MetricTypeExponentialHistogram
 	// MetricTypeSummary represents a summary metric.
 	MetricTypeSummary
-	// MetricTypeUnknown represents an unknown metric type.
-	MetricTypeUnknown
 )

@@ -9,11 +9,12 @@ func BenchmarkBuildCompliantMetricName(b *testing.B) {
 	scenarios := createTestScenarios()
 
 	for _, withSuffixes := range []bool{true, false} {
+		builder := NewMetricNameBuilder("test_namespace", withSuffixes)
 		b.Run(fmt.Sprintf("withSuffixes=%t", withSuffixes), func(b *testing.B) {
 			for _, scenario := range scenarios {
 				b.Run(scenario.name, func(b *testing.B) {
 					for i := 0; i < b.N; i++ {
-						BuildCompliantMetricName(scenario.metricName, scenario.metricUnit, scenario.metricType, "test_namespace", withSuffixes)
+						builder.BuildCompliantMetricName(scenario.metricName, scenario.metricUnit, scenario.metricType)
 					}
 				})
 			}
@@ -25,11 +26,12 @@ func BenchmarkBuildMetricName(b *testing.B) {
 	scenarios := createTestScenarios()
 
 	for _, withSuffixes := range []bool{true, false} {
+		builder := NewMetricNameBuilder("test_namespace", withSuffixes)
 		b.Run(fmt.Sprintf("withSuffixes=%t", withSuffixes), func(b *testing.B) {
 			for _, scenario := range scenarios {
 				b.Run(scenario.name, func(b *testing.B) {
 					for i := 0; i < b.N; i++ {
-						BuildMetricName(scenario.metricName, scenario.metricUnit, scenario.metricType, "test_namespace", withSuffixes)
+						builder.BuildMetricName(scenario.metricName, scenario.metricUnit, scenario.metricType)
 					}
 				})
 			}

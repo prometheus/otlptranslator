@@ -198,63 +198,73 @@ func TestRemoveItem(t *testing.T) {
 }
 
 func TestBuildCompliantMetricNameWithSuffixes(t *testing.T) {
-	require.Equal(t, "system_io_bytes_total", BuildCompliantMetricName("system.io", "By", MetricTypeMonotonicCounter, "", true))
-	require.Equal(t, "system_network_io_bytes_total", BuildCompliantMetricName("network.io", "By", MetricTypeMonotonicCounter, "system", true))
-	require.Equal(t, "_3_14_digits", BuildCompliantMetricName("3.14 digits", "", MetricTypeGauge, "", true))
-	require.Equal(t, "envoy_rule_engine_zlib_buf_error", BuildCompliantMetricName("envoy__rule_engine_zlib_buf_error", "", MetricTypeGauge, "", true))
-	require.Equal(t, ":foo::bar", BuildCompliantMetricName(":foo::bar", "", MetricTypeGauge, "", true))
-	require.Equal(t, ":foo::bar_total", BuildCompliantMetricName(":foo::bar", "", MetricTypeMonotonicCounter, "", true))
+	builder := NewMetricNameBuilder("", true)
+	require.Equal(t, "system_io_bytes_total", builder.BuildCompliantMetricName("system.io", "By", MetricTypeMonotonicCounter))
+	require.Equal(t, "_3_14_digits", builder.BuildCompliantMetricName("3.14 digits", "", MetricTypeGauge))
+	require.Equal(t, "envoy_rule_engine_zlib_buf_error", builder.BuildCompliantMetricName("envoy__rule_engine_zlib_buf_error", "", MetricTypeGauge))
+	require.Equal(t, ":foo::bar", builder.BuildCompliantMetricName(":foo::bar", "", MetricTypeGauge))
+	require.Equal(t, ":foo::bar_total", builder.BuildCompliantMetricName(":foo::bar", "", MetricTypeMonotonicCounter))
 	// Gauges with unit 1 are considered ratios.
-	require.Equal(t, "foo_bar_ratio", BuildCompliantMetricName("foo.bar", "1", MetricTypeGauge, "", true))
+	require.Equal(t, "foo_bar_ratio", builder.BuildCompliantMetricName("foo.bar", "1", MetricTypeGauge))
 	// Slashes in units are converted.
-	require.Equal(t, "system_io_foo_per_bar_total", BuildCompliantMetricName("system.io", "foo/bar", MetricTypeMonotonicCounter, "", true))
-	require.Equal(t, "metric_with_foreign_characters_total", BuildCompliantMetricName("metric_with_字符_foreign_characters", "", MetricTypeMonotonicCounter, "", true))
+	require.Equal(t, "system_io_foo_per_bar_total", builder.BuildCompliantMetricName("system.io", "foo/bar", MetricTypeMonotonicCounter))
+	require.Equal(t, "metric_with_foreign_characters_total", builder.BuildCompliantMetricName("metric_with_字符_foreign_characters", "", MetricTypeMonotonicCounter))
 	// Removes non aplhanumerical characters from units, but leaves colons.
-	require.Equal(t, "temperature_:C", BuildCompliantMetricName("temperature", "%*()°:C", MetricTypeGauge, "", true))
+	require.Equal(t, "temperature_:C", builder.BuildCompliantMetricName("temperature", "%*()°:C", MetricTypeGauge))
 }
 
 func TestBuildCompliantMetricNameWithoutSuffixes(t *testing.T) {
-	require.Equal(t, "system_io", BuildCompliantMetricName("system.io", "By", MetricTypeMonotonicCounter, "", false))
-	require.Equal(t, "system_network_io", BuildCompliantMetricName("network.io", "By", MetricTypeMonotonicCounter, "system", false))
-	require.Equal(t, "system_network_I_O", BuildCompliantMetricName("network (I/O)", "By", MetricTypeMonotonicCounter, "system", false))
-	require.Equal(t, "_3_14_digits", BuildCompliantMetricName("3.14 digits", "By", MetricTypeGauge, "", false))
-	require.Equal(t, "envoy__rule_engine_zlib_buf_error", BuildCompliantMetricName("envoy__rule_engine_zlib_buf_error", "", MetricTypeGauge, "", false))
-	require.Equal(t, ":foo::bar", BuildCompliantMetricName(":foo::bar", "", MetricTypeGauge, "", false))
-	require.Equal(t, ":foo::bar", BuildCompliantMetricName(":foo::bar", "", MetricTypeMonotonicCounter, "", false))
-	require.Equal(t, "foo_bar", BuildCompliantMetricName("foo.bar", "1", MetricTypeGauge, "", false))
-	require.Equal(t, "system_io", BuildCompliantMetricName("system.io", "foo/bar", MetricTypeMonotonicCounter, "", false))
-	require.Equal(t, "metric_with___foreign_characters", BuildCompliantMetricName("metric_with_字符_foreign_characters", "", MetricTypeMonotonicCounter, "", false))
+	builder := NewMetricNameBuilder("", false)
+	require.Equal(t, "system_io", builder.BuildCompliantMetricName("system.io", "By", MetricTypeMonotonicCounter))
+	require.Equal(t, "network_I_O", builder.BuildCompliantMetricName("network (I/O)", "By", MetricTypeMonotonicCounter))
+	require.Equal(t, "_3_14_digits", builder.BuildCompliantMetricName("3.14 digits", "By", MetricTypeGauge))
+	require.Equal(t, "envoy__rule_engine_zlib_buf_error", builder.BuildCompliantMetricName("envoy__rule_engine_zlib_buf_error", "", MetricTypeGauge))
+	require.Equal(t, ":foo::bar", builder.BuildCompliantMetricName(":foo::bar", "", MetricTypeGauge))
+	require.Equal(t, ":foo::bar", builder.BuildCompliantMetricName(":foo::bar", "", MetricTypeMonotonicCounter))
+	require.Equal(t, "foo_bar", builder.BuildCompliantMetricName("foo.bar", "1", MetricTypeGauge))
+	require.Equal(t, "system_io", builder.BuildCompliantMetricName("system.io", "foo/bar", MetricTypeMonotonicCounter))
+	require.Equal(t, "metric_with___foreign_characters", builder.BuildCompliantMetricName("metric_with_字符_foreign_characters", "", MetricTypeMonotonicCounter))
+}
+
+func TestBuildCompliantMetricNameWithNamespace(t *testing.T) {
+	builder := NewMetricNameBuilder("namespace", false)
+	require.Equal(t, "namespace_system_io", builder.BuildCompliantMetricName("system.io", "", MetricTypeMonotonicCounter))
 }
 
 func TestBuildMetricNameWithSuffixes(t *testing.T) {
-	require.Equal(t, "system.io_bytes_total", BuildMetricName("system.io", "By", MetricTypeMonotonicCounter, "", true))
-	require.Equal(t, "system_network.io_bytes_total", BuildMetricName("network.io", "By", MetricTypeMonotonicCounter, "system", true))
-	require.Equal(t, "3.14 digits", BuildMetricName("3.14 digits", "", MetricTypeGauge, "", true))
-	require.Equal(t, "envoy__rule_engine_zlib_buf_error", BuildMetricName("envoy__rule_engine_zlib_buf_error", "", MetricTypeGauge, "", true))
-	require.Equal(t, ":foo::bar", BuildMetricName(":foo::bar", "", MetricTypeGauge, "", true))
-	require.Equal(t, ":foo::bar_total", BuildMetricName(":foo::bar", "", MetricTypeMonotonicCounter, "", true))
+	builder := NewMetricNameBuilder("", true)
+	require.Equal(t, "system.io_bytes_total", builder.BuildMetricName("system.io", "By", MetricTypeMonotonicCounter))
+	require.Equal(t, "3.14 digits", builder.BuildMetricName("3.14 digits", "", MetricTypeGauge))
+	require.Equal(t, "envoy__rule_engine_zlib_buf_error", builder.BuildMetricName("envoy__rule_engine_zlib_buf_error", "", MetricTypeGauge))
+	require.Equal(t, ":foo::bar", builder.BuildMetricName(":foo::bar", "", MetricTypeGauge))
+	require.Equal(t, ":foo::bar_total", builder.BuildMetricName(":foo::bar", "", MetricTypeMonotonicCounter))
 	// Gauges with unit 1 are considered ratios.
-	require.Equal(t, "foo.bar_ratio", BuildMetricName("foo.bar", "1", MetricTypeGauge, "", true))
+	require.Equal(t, "foo.bar_ratio", builder.BuildMetricName("foo.bar", "1", MetricTypeGauge))
 	// Slashes in units are converted.
-	require.Equal(t, "system.io_foo_per_bar_total", BuildMetricName("system.io", "foo/bar", MetricTypeMonotonicCounter, "", true))
-	require.Equal(t, "metric_with_字符_foreign_characters_total", BuildMetricName("metric_with_字符_foreign_characters", "", MetricTypeMonotonicCounter, "", true))
-	require.Equal(t, "temperature_%*()°C", BuildMetricName("temperature", "%*()°C", MetricTypeGauge, "", true)) // Keeps the all characters in unit
+	require.Equal(t, "system.io_foo_per_bar_total", builder.BuildMetricName("system.io", "foo/bar", MetricTypeMonotonicCounter))
+	require.Equal(t, "metric_with_字符_foreign_characters_total", builder.BuildMetricName("metric_with_字符_foreign_characters", "", MetricTypeMonotonicCounter))
+	require.Equal(t, "temperature_%*()°C", builder.BuildMetricName("temperature", "%*()°C", MetricTypeGauge)) // Keeps the all characters in unit
 	// Tests below show weird interactions that users can have with the metric names.
 	// With BuildMetricName we don't check if units/type suffixes are already present in the metric name, we always add them.
-	require.Equal(t, "system_io_seconds_seconds", BuildMetricName("system_io_seconds", "s", MetricTypeGauge, "", true))
-	require.Equal(t, "system_io_total_total", BuildMetricName("system_io_total", "", MetricTypeMonotonicCounter, "", true))
+	require.Equal(t, "system_io_seconds_seconds", builder.BuildMetricName("system_io_seconds", "s", MetricTypeGauge))
+	require.Equal(t, "system_io_total_total", builder.BuildMetricName("system_io_total", "", MetricTypeMonotonicCounter))
 }
 
 func TestBuildMetricNameWithoutSuffixes(t *testing.T) {
-	require.Equal(t, "system.io", BuildMetricName("system.io", "By", MetricTypeMonotonicCounter, "", false))
-	require.Equal(t, "system_network.io", BuildMetricName("network.io", "By", MetricTypeMonotonicCounter, "system", false))
-	require.Equal(t, "3.14 digits", BuildMetricName("3.14 digits", "", MetricTypeGauge, "", false))
-	require.Equal(t, "envoy__rule_engine_zlib_buf_error", BuildMetricName("envoy__rule_engine_zlib_buf_error", "", MetricTypeGauge, "", false))
-	require.Equal(t, ":foo::bar", BuildMetricName(":foo::bar", "", MetricTypeGauge, "", false))
-	require.Equal(t, ":foo::bar", BuildMetricName(":foo::bar", "", MetricTypeMonotonicCounter, "", false))
+	builder := NewMetricNameBuilder("", false)
+	require.Equal(t, "system.io", builder.BuildMetricName("system.io", "By", MetricTypeMonotonicCounter))
+	require.Equal(t, "3.14 digits", builder.BuildMetricName("3.14 digits", "", MetricTypeGauge))
+	require.Equal(t, "envoy__rule_engine_zlib_buf_error", builder.BuildMetricName("envoy__rule_engine_zlib_buf_error", "", MetricTypeGauge))
+	require.Equal(t, ":foo::bar", builder.BuildMetricName(":foo::bar", "", MetricTypeGauge))
+	require.Equal(t, ":foo::bar", builder.BuildMetricName(":foo::bar", "", MetricTypeMonotonicCounter))
 	// Gauges with unit 1 are considered ratios.
-	require.Equal(t, "foo.bar", BuildMetricName("foo.bar", "1", MetricTypeGauge, "", false))
-	require.Equal(t, "metric_with_字符_foreign_characters", BuildMetricName("metric_with_字符_foreign_characters", "", MetricTypeMonotonicCounter, "", false))
-	require.Equal(t, "system_io_seconds", BuildMetricName("system_io_seconds", "s", MetricTypeGauge, "", false))
-	require.Equal(t, "system_io_total", BuildMetricName("system_io_total", "", MetricTypeMonotonicCounter, "", false))
+	require.Equal(t, "foo.bar", builder.BuildMetricName("foo.bar", "1", MetricTypeGauge))
+	require.Equal(t, "metric_with_字符_foreign_characters", builder.BuildMetricName("metric_with_字符_foreign_characters", "", MetricTypeMonotonicCounter))
+	require.Equal(t, "system_io_seconds", builder.BuildMetricName("system_io_seconds", "s", MetricTypeGauge))
+	require.Equal(t, "system_io_total", builder.BuildMetricName("system_io_total", "", MetricTypeMonotonicCounter))
+}
+
+func TestBuildMetricNameWithNamespace(t *testing.T) {
+	builder := NewMetricNameBuilder("namespace", false)
+	require.Equal(t, "namespace_system.io", builder.BuildMetricName("system.io", "", MetricTypeMonotonicCounter))
 }

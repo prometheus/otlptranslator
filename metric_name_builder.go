@@ -80,19 +80,45 @@ var perUnitMap = map[string]string{
 	"y":  "year",
 }
 
+// MetricNameBuilder is a helper struct to build metric names.
+type MetricNameBuilder struct {
+	namespace      string
+	metricSuffixes bool
+}
+
+// NewDefaultMetricNameBuilder creates a new MetricNameBuilder with default values:
+// - namespace: ""
+// - metricSuffixes: false
+//
+// Please use NewMetricNameBuilder for custom configurations.
+func NewDefaultMetricNameBuilder() *MetricNameBuilder {
+	return NewMetricNameBuilder("", false)
+}
+
+// NewMetricNameBuilder creates a new MetricNameBuilder.
+//
+// namespace is the namespace to prefix the metric name with.
+// metricSuffixes controls the addition of metric suffixes to the metric name, e.g. unit suffixes
+// and type suffixes (e.g. "_total" for counters).
+func NewMetricNameBuilder(namespace string, metricSuffixes bool) *MetricNameBuilder {
+	return &MetricNameBuilder{
+		namespace:      namespace,
+		metricSuffixes: metricSuffixes,
+	}
+}
+
 // BuildCompliantMetricName builds a Prometheus-compliant metric name for the specified metric.
 //
-// Metric name is prefixed with specified namespace and underscore (if any).
-// Namespace is not cleaned up. Make sure specified namespace follows Prometheus
-// naming convention.
+// If metricSuffixes is true, it will check for the presence of unit and type suffixes and add them
+// to the metric name if they are not already present.
 //
 // See rules at https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels,
 // https://prometheus.io/docs/practices/naming/#metric-and-label-naming
 // and https://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus.
-func BuildCompliantMetricName(name, unit string, metricType MetricType, namespace string, addMetricSuffixes bool) string {
+func (b *MetricNameBuilder) BuildCompliantMetricName(name, unit string, metricType MetricType) string {
 	// Full normalization following standard Prometheus naming conventions
-	if addMetricSuffixes {
-		return normalizeName(name, unit, metricType, namespace)
+	if b.metricSuffixes {
+		return normalizeName(name, unit, metricType, b.namespace)
 	}
 
 	// Simple case (no full normalization, no units, etc.).
@@ -101,8 +127,8 @@ func BuildCompliantMetricName(name, unit string, metricType MetricType, namespac
 	}), "_")
 
 	// Namespace?
-	if namespace != "" {
-		return namespace + "_" + metricName
+	if b.namespace != "" {
+		return b.namespace + "_" + metricName
 	}
 
 	// Metric name starts with a digit? Prefix it with an underscore.
@@ -258,12 +284,12 @@ func removeItem(slice []string, value string) []string {
 // If "addMetricSuffixes" is true, it will add them anyway.
 //
 // Please use BuildCompliantMetricName for a metric name that follows Prometheus naming conventions.
-func BuildMetricName(name, unit string, metricType MetricType, namespace string, addMetricSuffixes bool) string {
-	if namespace != "" {
-		name = namespace + "_" + name
+func (b *MetricNameBuilder) BuildMetricName(name, unit string, metricType MetricType) string {
+	if b.namespace != "" {
+		name = b.namespace + "_" + name
 	}
 
-	if addMetricSuffixes {
+	if b.metricSuffixes {
 		mainUnitSuffix, perUnitSuffix := buildUnitSuffixes(unit)
 		if mainUnitSuffix != "" {
 			name = name + "_" + mainUnitSuffix
