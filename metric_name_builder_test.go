@@ -198,7 +198,7 @@ func TestRemoveItem(t *testing.T) {
 }
 
 func TestBuildCompliantMetricNameWithSuffixes(t *testing.T) {
-	builder := MetricNameBuilder{WithMetricSuffixes: true}
+	builder := MetricNamer{WithMetricSuffixes: true}
 	require.Equal(t, "system_io_bytes_total", builder.buildCompliantMetricName("system.io", "By", MetricTypeMonotonicCounter))
 	require.Equal(t, "_3_14_digits", builder.buildCompliantMetricName("3.14 digits", "", MetricTypeGauge))
 	require.Equal(t, "envoy_rule_engine_zlib_buf_error", builder.buildCompliantMetricName("envoy__rule_engine_zlib_buf_error", "", MetricTypeGauge))
@@ -214,7 +214,7 @@ func TestBuildCompliantMetricNameWithSuffixes(t *testing.T) {
 }
 
 func TestBuildCompliantMetricNameWithoutSuffixes(t *testing.T) {
-	builder := MetricNameBuilder{}
+	builder := MetricNamer{}
 	require.Equal(t, "system_io", builder.buildCompliantMetricName("system.io", "By", MetricTypeMonotonicCounter))
 	require.Equal(t, "network_I_O", builder.buildCompliantMetricName("network (I/O)", "By", MetricTypeMonotonicCounter))
 	require.Equal(t, "_3_14_digits", builder.buildCompliantMetricName("3.14 digits", "By", MetricTypeGauge))
@@ -227,12 +227,12 @@ func TestBuildCompliantMetricNameWithoutSuffixes(t *testing.T) {
 }
 
 func TestBuildCompliantMetricNameWithNamespace(t *testing.T) {
-	builder := MetricNameBuilder{Namespace: "namespace"}
+	builder := MetricNamer{Namespace: "namespace"}
 	require.Equal(t, "namespace_system_io", builder.buildCompliantMetricName("system.io", "", MetricTypeMonotonicCounter))
 }
 
 func TestBuildMetricNameWithSuffixes(t *testing.T) {
-	builder := MetricNameBuilder{UTF8Allowed: true, WithMetricSuffixes: true}
+	builder := MetricNamer{UTF8Allowed: true, WithMetricSuffixes: true}
 	require.Equal(t, "system.io_bytes_total", builder.buildMetricName("system.io", "By", MetricTypeMonotonicCounter))
 	require.Equal(t, "3.14 digits", builder.buildMetricName("3.14 digits", "", MetricTypeGauge))
 	require.Equal(t, "envoy__rule_engine_zlib_buf_error", builder.buildMetricName("envoy__rule_engine_zlib_buf_error", "", MetricTypeGauge))
@@ -251,7 +251,7 @@ func TestBuildMetricNameWithSuffixes(t *testing.T) {
 }
 
 func TestBuildMetricNameWithoutSuffixes(t *testing.T) {
-	builder := MetricNameBuilder{UTF8Allowed: true}
+	builder := MetricNamer{UTF8Allowed: true}
 	require.Equal(t, "system.io", builder.buildMetricName("system.io", "By", MetricTypeMonotonicCounter))
 	require.Equal(t, "3.14 digits", builder.buildMetricName("3.14 digits", "", MetricTypeGauge))
 	require.Equal(t, "envoy__rule_engine_zlib_buf_error", builder.buildMetricName("envoy__rule_engine_zlib_buf_error", "", MetricTypeGauge))
@@ -265,6 +265,6 @@ func TestBuildMetricNameWithoutSuffixes(t *testing.T) {
 }
 
 func TestBuildMetricNameWithNamespace(t *testing.T) {
-	builder := MetricNameBuilder{UTF8Allowed: true, Namespace: "namespace"}
+	builder := MetricNamer{UTF8Allowed: true, Namespace: "namespace"}
 	require.Equal(t, "namespace_system.io", builder.buildMetricName("system.io", "", MetricTypeMonotonicCounter))
 }

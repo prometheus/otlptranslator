@@ -80,11 +80,18 @@ var perUnitMap = map[string]string{
 	"y":  "year",
 }
 
-// MetricNameBuilder is a helper struct to build metric names.
-type MetricNameBuilder struct {
+// MetricNamer is a helper struct to build metric names.
+type MetricNamer struct {
 	Namespace          string
 	WithMetricSuffixes bool
 	UTF8Allowed        bool
+}
+
+// Metric is a helper struct that holds information about a metric.
+type Metric struct {
+	Name string
+	Unit string
+	Type MetricType
 }
 
 // Build builds a metric name for the specified metric.
@@ -93,17 +100,17 @@ type MetricNameBuilder struct {
 // Otherwise the metric name is normalized to be Prometheus-compliant.
 // See rules at https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels,
 // https://prometheus.io/docs/practices/naming/#metric-and-label-naming
-func (b *MetricNameBuilder) Build(name, unit string, metricType MetricType) string {
-	if b.UTF8Allowed {
-		return b.buildMetricName(name, unit, metricType)
+func (mn *MetricNamer) Build(metric Metric) string {
+	if mn.UTF8Allowed {
+		return mn.buildMetricName(metric.Name, metric.Unit, metric.Type)
 	}
-	return b.buildCompliantMetricName(name, unit, metricType)
+	return mn.buildCompliantMetricName(metric.Name, metric.Unit, metric.Type)
 }
 
-func (b *MetricNameBuilder) buildCompliantMetricName(name, unit string, metricType MetricType) string {
+func (mn *MetricNamer) buildCompliantMetricName(name, unit string, metricType MetricType) string {
 	// Full normalization following standard Prometheus naming conventions
-	if b.WithMetricSuffixes {
-		return normalizeName(name, unit, metricType, b.Namespace)
+	if mn.WithMetricSuffixes {
+		return normalizeName(name, unit, metricType, mn.Namespace)
 	}
 
 	// Simple case (no full normalization, no units, etc.).
@@ -112,8 +119,8 @@ func (b *MetricNameBuilder) buildCompliantMetricName(name, unit string, metricTy
 	}), "_")
 
 	// Namespace?
-	if b.Namespace != "" {
-		return b.Namespace + "_" + metricName
+	if mn.Namespace != "" {
+		return mn.Namespace + "_" + metricName
 	}
 
 	// Metric name starts with a digit? Prefix it with an underscore.
@@ -261,12 +268,12 @@ func removeItem(slice []string, value string) []string {
 	return newSlice
 }
 
-func (b *MetricNameBuilder) buildMetricName(name, unit string, metricType MetricType) string {
-	if b.Namespace != "" {
-		name = b.Namespace + "_" + name
+func (mn *MetricNamer) buildMetricName(name, unit string, metricType MetricType) string {
+	if mn.Namespace != "" {
+		name = mn.Namespace + "_" + name
 	}
 
-	if b.WithMetricSuffixes {
+	if mn.WithMetricSuffixes {
 		mainUnitSuffix, perUnitSuffix := buildUnitSuffixes(unit)
 		if mainUnitSuffix != "" {
 			name = name + "_" + mainUnitSuffix
