@@ -3,35 +3,24 @@ package otlptranslator
 import (
 	"fmt"
 	"testing"
-
-	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func BenchmarkBuildCompliantMetricName(b *testing.B) {
+func BenchmarkBuild(b *testing.B) {
 	scenarios := createTestScenarios()
+	builder := MetricNamer{Namespace: "test_namespace"}
 
 	for _, withSuffixes := range []bool{true, false} {
+		builder.WithMetricSuffixes = withSuffixes
 		b.Run(fmt.Sprintf("withSuffixes=%t", withSuffixes), func(b *testing.B) {
-			for _, scenario := range scenarios {
-				b.Run(scenario.name, func(b *testing.B) {
-					for i := 0; i < b.N; i++ {
-						BuildCompliantMetricName(scenario.metric, "test_namespace", withSuffixes)
-					}
-				})
-			}
-		})
-	}
-}
-
-func BenchmarkBuildMetricName(b *testing.B) {
-	scenarios := createTestScenarios()
-
-	for _, withSuffixes := range []bool{true, false} {
-		b.Run(fmt.Sprintf("withSuffixes=%t", withSuffixes), func(b *testing.B) {
-			for _, scenario := range scenarios {
-				b.Run(scenario.name, func(b *testing.B) {
-					for i := 0; i < b.N; i++ {
-						BuildMetricName(scenario.metric, "test_namespace", withSuffixes)
+			for _, utf8Allowed := range []bool{true, false} {
+				builder.UTF8Allowed = utf8Allowed
+				b.Run(fmt.Sprintf("utf8Allowed=%t", utf8Allowed), func(b *testing.B) {
+					for _, scenario := range scenarios {
+						b.Run(scenario.name, func(b *testing.B) {
+							for i := 0; i < b.N; i++ {
+								builder.Build(scenario.metric)
+							}
+						})
 					}
 				})
 			}
@@ -41,83 +30,82 @@ func BenchmarkBuildMetricName(b *testing.B) {
 
 type scenario struct {
 	name   string
-	metric pmetric.Metric
+	metric Metric
 }
 
 func createTestScenarios() []scenario {
 	scenarios := make([]scenario, 0)
 
-	metric := pmetric.NewMetric()
-	metric.SetName("simple_metric")
-	metric.SetUnit("")
-	metric.SetEmptyGauge()
 	scenarios = append(scenarios, scenario{
-		name:   "Basic metric with no special characters",
-		metric: metric,
+		name: "Basic metric with no special characters",
+		metric: Metric{
+			Name: "simple_metric",
+			Unit: "",
+			Type: MetricTypeGauge,
+		},
 	})
 
-	metric = pmetric.NewMetric()
-	metric.SetName("counter_metric")
-	metric.SetUnit("")
-	sum := metric.SetEmptySum()
-	sum.SetIsMonotonic(true)
 	scenarios = append(scenarios, scenario{
-		name:   "Counter metric",
-		metric: metric,
+		name: "Counter metric",
+		metric: Metric{
+			Name: "counter_metric",
+			Unit: "",
+			Type: MetricTypeMonotonicCounter,
+		},
 	})
 
-	metric = pmetric.NewMetric()
-	metric.SetName("ratio_metric")
-	metric.SetUnit("1")
-	metric.SetEmptyGauge()
 	scenarios = append(scenarios, scenario{
-		name:   "Gauge ratio metric",
-		metric: metric,
+		name: "Gauge ratio metric",
+		metric: Metric{
+			Name: "ratio_metric",
+			Unit: "1",
+			Type: MetricTypeGauge,
+		},
 	})
 
-	metric = pmetric.NewMetric()
-	metric.SetName("requests")
-	metric.SetUnit("1/s")
-	metric.SetEmptyGauge()
 	scenarios = append(scenarios, scenario{
-		name:   "Metric with per-unit suffix notation",
-		metric: metric,
+		name: "Metric with per-unit suffix notation",
+		metric: Metric{
+			Name: "requests",
+			Unit: "1/s",
+			Type: MetricTypeGauge,
+		},
 	})
 
-	metric = pmetric.NewMetric()
-	metric.SetName("metric@with#special$chars")
-	metric.SetUnit("")
-	metric.SetEmptyGauge()
 	scenarios = append(scenarios, scenario{
-		name:   "Metric with special characters",
-		metric: metric,
+		name: "Metric with special characters",
+		metric: Metric{
+			Name: "metric@with#special$chars",
+			Unit: "",
+			Type: MetricTypeGauge,
+		},
 	})
 
-	metric = pmetric.NewMetric()
-	metric.SetName("123metric")
-	metric.SetUnit("")
-	metric.SetEmptyGauge()
 	scenarios = append(scenarios, scenario{
-		name:   "Metric starting with digit",
-		metric: metric,
+		name: "Metric starting with digit",
+		metric: Metric{
+			Name: "123metric",
+			Unit: "",
+			Type: MetricTypeGauge,
+		},
 	})
 
-	metric = pmetric.NewMetric()
-	metric.SetName("metric__with__multiple__underscores")
-	metric.SetUnit("")
-	metric.SetEmptyGauge()
 	scenarios = append(scenarios, scenario{
-		name:   "Metric with multiple underscores",
-		metric: metric,
+		name: "Metric with multiple underscores",
+		metric: Metric{
+			Name: "metric__with__multiple__underscores",
+			Unit: "",
+			Type: MetricTypeGauge,
+		},
 	})
 
-	metric = pmetric.NewMetric()
-	metric.SetName("memory_usage")
-	metric.SetUnit("MiBy/s")
-	metric.SetEmptyGauge()
 	scenarios = append(scenarios, scenario{
-		name:   "Metric with complex unit",
-		metric: metric,
+		name: "Metric with complex unit",
+		metric: Metric{
+			Name: "memory_usage",
+			Unit: "MiBy/s",
+			Type: MetricTypeGauge,
+		},
 	})
 
 	return scenarios
