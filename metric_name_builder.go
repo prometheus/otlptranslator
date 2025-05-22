@@ -95,9 +95,9 @@ type MetricNameBuilder struct {
 // https://prometheus.io/docs/practices/naming/#metric-and-label-naming
 func (b *MetricNameBuilder) Build(name, unit string, metricType MetricType) string {
 	if b.UTF8Allowed {
-		return b.buildCompliantMetricName(name, unit, metricType)
+		return b.buildMetricName(name, unit, metricType)
 	}
-	return b.buildMetricName(name, unit, metricType)
+	return b.buildCompliantMetricName(name, unit, metricType)
 }
 
 func (b *MetricNameBuilder) buildCompliantMetricName(name, unit string, metricType MetricType) string {
