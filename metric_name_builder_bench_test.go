@@ -18,7 +18,7 @@ func BenchmarkBuild(b *testing.B) {
 					for _, scenario := range scenarios {
 						b.Run(scenario.name, func(b *testing.B) {
 							for i := 0; i < b.N; i++ {
-								builder.buildCompliantMetricName(scenario.metricName, scenario.metricUnit, scenario.metricType)
+								builder.Build(scenario.metricName, scenario.metricUnit, scenario.metricType)
 							}
 						})
 					}
