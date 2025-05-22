@@ -268,3 +268,12 @@ func TestBuildMetricNameWithNamespace(t *testing.T) {
 	builder := MetricNamer{UTF8Allowed: true, Namespace: "namespace"}
 	require.Equal(t, "namespace_system.io", builder.buildMetricName("system.io", "", MetricTypeMonotonicCounter))
 }
+
+func TestTypesWithNoopSuffixAddition(t *testing.T) {
+	builder := MetricNamer{WithMetricSuffixes: true}
+	require.Equal(t, "system_io_bytes", builder.buildMetricName("system_io", "By", MetricTypeGauge))
+	require.Equal(t, "system_io_bytes", builder.buildMetricName("system_io", "By", MetricTypeUnknown))
+	require.Equal(t, "system_io_bytes", builder.buildMetricName("system_io", "By", MetricTypeNonMonotonicCounter))
+	require.Equal(t, "system_io_bytes", builder.buildMetricName("system_io", "By", MetricTypeHistogram))
+	require.Equal(t, "system_io_bytes", builder.buildMetricName("system_io", "By", MetricTypeSummary))
+}
