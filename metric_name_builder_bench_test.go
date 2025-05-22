@@ -5,33 +5,22 @@ import (
 	"testing"
 )
 
-func BenchmarkBuildCompliantMetricName(b *testing.B) {
+func BenchmarkBuild(b *testing.B) {
 	scenarios := createTestScenarios()
+	builder := MetricNameBuilder{Namespace: "test_namespace"}
 
 	for _, withSuffixes := range []bool{true, false} {
-		builder := NewMetricNameBuilder("test_namespace", withSuffixes)
+		builder.WithMetricSuffixes = withSuffixes
 		b.Run(fmt.Sprintf("withSuffixes=%t", withSuffixes), func(b *testing.B) {
-			for _, scenario := range scenarios {
-				b.Run(scenario.name, func(b *testing.B) {
-					for i := 0; i < b.N; i++ {
-						builder.BuildCompliantMetricName(scenario.metricName, scenario.metricUnit, scenario.metricType)
-					}
-				})
-			}
-		})
-	}
-}
-
-func BenchmarkBuildMetricName(b *testing.B) {
-	scenarios := createTestScenarios()
-
-	for _, withSuffixes := range []bool{true, false} {
-		builder := NewMetricNameBuilder("test_namespace", withSuffixes)
-		b.Run(fmt.Sprintf("withSuffixes=%t", withSuffixes), func(b *testing.B) {
-			for _, scenario := range scenarios {
-				b.Run(scenario.name, func(b *testing.B) {
-					for i := 0; i < b.N; i++ {
-						builder.BuildMetricName(scenario.metricName, scenario.metricUnit, scenario.metricType)
+			for _, utf8Allowed := range []bool{true, false} {
+				builder.UTF8Allowed = utf8Allowed
+				b.Run(fmt.Sprintf("utf8Allowed=%t", utf8Allowed), func(b *testing.B) {
+					for _, scenario := range scenarios {
+						b.Run(scenario.name, func(b *testing.B) {
+							for i := 0; i < b.N; i++ {
+								builder.buildCompliantMetricName(scenario.metricName, scenario.metricUnit, scenario.metricType)
+							}
+						})
 					}
 				})
 			}
