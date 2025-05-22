@@ -82,8 +82,8 @@ var perUnitMap = map[string]string{
 
 // MetricNameBuilder is a helper struct to build metric names.
 type MetricNameBuilder struct {
-	namespace      string
-	metricSuffixes bool
+	Namespace          string
+	WithMetricSuffixes bool
 }
 
 // NewDefaultMetricNameBuilder creates a new MetricNameBuilder with default values:
@@ -102,8 +102,8 @@ func NewDefaultMetricNameBuilder() *MetricNameBuilder {
 // and type suffixes (e.g. "_total" for counters).
 func NewMetricNameBuilder(namespace string, metricSuffixes bool) *MetricNameBuilder {
 	return &MetricNameBuilder{
-		namespace:      namespace,
-		metricSuffixes: metricSuffixes,
+		Namespace:          namespace,
+		WithMetricSuffixes: metricSuffixes,
 	}
 }
 
@@ -117,8 +117,8 @@ func NewMetricNameBuilder(namespace string, metricSuffixes bool) *MetricNameBuil
 // and https://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus.
 func (b *MetricNameBuilder) BuildCompliantMetricName(name, unit string, metricType MetricType) string {
 	// Full normalization following standard Prometheus naming conventions
-	if b.metricSuffixes {
-		return normalizeName(name, unit, metricType, b.namespace)
+	if b.WithMetricSuffixes {
+		return normalizeName(name, unit, metricType, b.Namespace)
 	}
 
 	// Simple case (no full normalization, no units, etc.).
@@ -127,8 +127,8 @@ func (b *MetricNameBuilder) BuildCompliantMetricName(name, unit string, metricTy
 	}), "_")
 
 	// Namespace?
-	if b.namespace != "" {
-		return b.namespace + "_" + metricName
+	if b.Namespace != "" {
+		return b.Namespace + "_" + metricName
 	}
 
 	// Metric name starts with a digit? Prefix it with an underscore.
@@ -285,11 +285,11 @@ func removeItem(slice []string, value string) []string {
 //
 // Please use BuildCompliantMetricName for a metric name that follows Prometheus naming conventions.
 func (b *MetricNameBuilder) BuildMetricName(name, unit string, metricType MetricType) string {
-	if b.namespace != "" {
-		name = b.namespace + "_" + name
+	if b.Namespace != "" {
+		name = b.Namespace + "_" + name
 	}
 
-	if b.metricSuffixes {
+	if b.WithMetricSuffixes {
 		mainUnitSuffix, perUnitSuffix := buildUnitSuffixes(unit)
 		if mainUnitSuffix != "" {
 			name = name + "_" + mainUnitSuffix
