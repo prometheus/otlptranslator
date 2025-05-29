@@ -40,9 +40,17 @@ func TestNormalizeLabel(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		t.Run(fmt.Sprintf("test_%d", i), func(t *testing.T) {
-			result := NormalizeLabel(test.label)
-			require.Equal(t, test.expected, result)
-		})
+		for _, utf8Allowed := range []bool{true, false} {
+			t.Run(fmt.Sprintf("test_%d", i), func(t *testing.T) {
+				labelNamer := LabelNamer{UTF8Allowed: utf8Allowed}
+				result := labelNamer.Build(test.label)
+
+				if utf8Allowed {
+					require.Equal(t, test.label, result)
+				} else {
+					require.Equal(t, test.expected, result)
+				}
+			})
+		}
 	}
 }

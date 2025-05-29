@@ -45,10 +45,11 @@ var labelBenchmarkInputs = []struct {
 }
 
 func BenchmarkNormalizeLabel(b *testing.B) {
+	labelNamer := LabelNamer{UTF8Allowed: false}
 	for _, input := range labelBenchmarkInputs {
 		b.Run(input.name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				NormalizeLabel(input.label)
+				labelNamer.Build(input.label)
 			}
 		})
 	}
