@@ -21,6 +21,8 @@ package otlptranslator
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestMetricNamer_Build(t *testing.T) {
@@ -994,9 +996,7 @@ func TestMetricNamer_Build(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.namer.Build(tt.metric)
-			if got != tt.expected {
-				t.Errorf("MetricNamer.Build() = %q, want %q", got, tt.expected)
-			}
+			require.Equal(t, tt.expected, got)
 		})
 	}
 }
