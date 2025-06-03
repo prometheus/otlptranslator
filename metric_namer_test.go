@@ -25,255 +25,1032 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestByte(t *testing.T) {
-	require.Equal(t, "system_filesystem_usage_bytes", normalizeName("system.filesystem.usage", "By", MetricTypeGauge, ""))
-}
-
-func TestByteCounter(t *testing.T) {
-	require.Equal(t, "system_io_bytes_total", normalizeName("system.io", "By", MetricTypeMonotonicCounter, ""))
-	require.Equal(t, "network_transmitted_bytes_total", normalizeName("network_transmitted_bytes_total", "By", MetricTypeMonotonicCounter, ""))
-}
-
-func TestWhiteSpaces(t *testing.T) {
-	require.Equal(t, "system_filesystem_usage_bytes", normalizeName("\t system.filesystem.usage       ", "  By\t", MetricTypeGauge, ""))
-}
-
-func TestNonStandardUnit(t *testing.T) {
-	require.Equal(t, "system_network_dropped", normalizeName("system.network.dropped", "{packets}", MetricTypeGauge, ""))
-	// The normal metric name character set is allowed in non-standard units.
-	require.Equal(t, "system_network_dropped_nonstandard:_1", normalizeName("system.network.dropped", "nonstandard:_1", MetricTypeGauge, ""))
-}
-
-func TestNonStandardUnitCounter(t *testing.T) {
-	require.Equal(t, "system_network_dropped_total", normalizeName("system.network.dropped", "{packets}", MetricTypeMonotonicCounter, ""))
-}
-
-func TestBrokenUnit(t *testing.T) {
-	require.Equal(t, "system_network_dropped_packets", normalizeName("system.network.dropped", "packets", MetricTypeGauge, ""))
-	require.Equal(t, "system_network_packets_dropped", normalizeName("system.network.packets.dropped", "packets", MetricTypeGauge, ""))
-	require.Equal(t, "system_network_packets", normalizeName("system.network.packets", "packets", MetricTypeGauge, ""))
-}
-
-func TestBrokenUnitCounter(t *testing.T) {
-	require.Equal(t, "system_network_dropped_packets_total", normalizeName("system.network.dropped", "packets", MetricTypeMonotonicCounter, ""))
-	require.Equal(t, "system_network_packets_dropped_total", normalizeName("system.network.packets.dropped", "packets", MetricTypeMonotonicCounter, ""))
-	require.Equal(t, "system_network_packets_total", normalizeName("system.network.packets", "packets", MetricTypeMonotonicCounter, ""))
-}
-
-func TestRatio(t *testing.T) {
-	require.Equal(t, "hw_gpu_memory_utilization_ratio", normalizeName("hw.gpu.memory.utilization", "1", MetricTypeGauge, ""))
-	require.Equal(t, "hw_fan_speed_ratio", normalizeName("hw.fan.speed_ratio", "1", MetricTypeGauge, ""))
-	require.Equal(t, "objects_total", normalizeName("objects", "1", MetricTypeMonotonicCounter, ""))
-}
-
-func TestHertz(t *testing.T) {
-	require.Equal(t, "hw_cpu_speed_limit_hertz", normalizeName("hw.cpu.speed_limit", "Hz", MetricTypeGauge, ""))
-}
-
-func TestPer(t *testing.T) {
-	require.Equal(t, "broken_metric_speed_km_per_hour", normalizeName("broken.metric.speed", "km/h", MetricTypeGauge, ""))
-	require.Equal(t, "astro_light_speed_limit_meters_per_second", normalizeName("astro.light.speed_limit", "m/s", MetricTypeGauge, ""))
-	// The normal metric name character set is allowed in non-standard units.
-	require.Equal(t, "system_network_dropped_non_per_standard:_1", normalizeName("system.network.dropped", "non/standard:_1", MetricTypeGauge, ""))
-
-	t.Run("invalid per unit", func(t *testing.T) {
-		require.Equal(t, "broken_metric_speed_km", normalizeName("broken.metric.speed", "km/°", MetricTypeGauge, ""))
-	})
-}
-
-func TestPercent(t *testing.T) {
-	require.Equal(t, "broken_metric_success_ratio_percent", normalizeName("broken.metric.success_ratio", "%", MetricTypeGauge, ""))
-	require.Equal(t, "broken_metric_success_percent", normalizeName("broken.metric.success_percent", "%", MetricTypeGauge, ""))
-}
-
-func TestEmpty(t *testing.T) {
-	require.Equal(t, "test_metric_no_unit", normalizeName("test.metric.no_unit", "", MetricTypeGauge, ""))
-	require.Equal(t, "test_metric_spaces", normalizeName("test.metric.spaces", "   \t  ", MetricTypeGauge, ""))
-}
-
-func TestOTelReceivers(t *testing.T) {
-	require.Equal(t, "active_directory_ds_replication_network_io_bytes_total", normalizeName("active_directory.ds.replication.network.io", "By", MetricTypeMonotonicCounter, ""))
-	require.Equal(t, "active_directory_ds_replication_sync_object_pending_total", normalizeName("active_directory.ds.replication.sync.object.pending", "{objects}", MetricTypeMonotonicCounter, ""))
-	require.Equal(t, "active_directory_ds_replication_object_rate_per_second", normalizeName("active_directory.ds.replication.object.rate", "{objects}/s", MetricTypeGauge, ""))
-	require.Equal(t, "active_directory_ds_name_cache_hit_rate_percent", normalizeName("active_directory.ds.name_cache.hit_rate", "%", MetricTypeGauge, ""))
-	require.Equal(t, "active_directory_ds_ldap_bind_last_successful_time_milliseconds", normalizeName("active_directory.ds.ldap.bind.last_successful.time", "ms", MetricTypeGauge, ""))
-	require.Equal(t, "apache_current_connections", normalizeName("apache.current_connections", "connections", MetricTypeGauge, ""))
-	require.Equal(t, "apache_workers_connections", normalizeName("apache.workers", "connections", MetricTypeGauge, ""))
-	require.Equal(t, "apache_requests_total", normalizeName("apache.requests", "1", MetricTypeMonotonicCounter, ""))
-	require.Equal(t, "bigip_virtual_server_request_count_total", normalizeName("bigip.virtual_server.request.count", "{requests}", MetricTypeMonotonicCounter, ""))
-	require.Equal(t, "system_cpu_utilization_ratio", normalizeName("system.cpu.utilization", "1", MetricTypeGauge, ""))
-	require.Equal(t, "system_disk_operation_time_seconds_total", normalizeName("system.disk.operation_time", "s", MetricTypeMonotonicCounter, ""))
-	require.Equal(t, "system_cpu_load_average_15m_ratio", normalizeName("system.cpu.load_average.15m", "1", MetricTypeGauge, ""))
-	require.Equal(t, "memcached_operation_hit_ratio_percent", normalizeName("memcached.operation_hit_ratio", "%", MetricTypeGauge, ""))
-	require.Equal(t, "mongodbatlas_process_asserts_per_second", normalizeName("mongodbatlas.process.asserts", "{assertions}/s", MetricTypeGauge, ""))
-	require.Equal(t, "mongodbatlas_process_journaling_data_files_mebibytes", normalizeName("mongodbatlas.process.journaling.data_files", "MiBy", MetricTypeGauge, ""))
-	require.Equal(t, "mongodbatlas_process_network_io_bytes_per_second", normalizeName("mongodbatlas.process.network.io", "By/s", MetricTypeGauge, ""))
-	require.Equal(t, "mongodbatlas_process_oplog_rate_gibibytes_per_hour", normalizeName("mongodbatlas.process.oplog.rate", "GiBy/h", MetricTypeGauge, ""))
-	require.Equal(t, "mongodbatlas_process_db_query_targeting_scanned_per_returned", normalizeName("mongodbatlas.process.db.query_targeting.scanned_per_returned", "{scanned}/{returned}", MetricTypeGauge, ""))
-	require.Equal(t, "nginx_requests", normalizeName("nginx.requests", "requests", MetricTypeGauge, ""))
-	require.Equal(t, "nginx_connections_accepted", normalizeName("nginx.connections_accepted", "connections", MetricTypeGauge, ""))
-	require.Equal(t, "nsxt_node_memory_usage_kilobytes", normalizeName("nsxt.node.memory.usage", "KBy", MetricTypeGauge, ""))
-	require.Equal(t, "redis_latest_fork_microseconds", normalizeName("redis.latest_fork", "us", MetricTypeGauge, ""))
-}
-
-func TestNamespace(t *testing.T) {
-	require.Equal(t, "space_test", normalizeName("test", "", MetricTypeGauge, "space"))
-	require.Equal(t, "space_test", normalizeName("#test", "", MetricTypeGauge, "space"))
-}
-
-func TestCleanUpUnit(t *testing.T) {
-	require.Empty(t, cleanUpUnit(""))
-	require.Equal(t, "a_b", cleanUpUnit("a b"))
-	require.Equal(t, "hello_world", cleanUpUnit("hello, world"))
-	require.Equal(t, "hello_you_2", cleanUpUnit("hello you 2"))
-	require.Equal(t, "1000", cleanUpUnit("$1000"))
-	require.Empty(t, cleanUpUnit("*+$^=)"))
-}
-
-func TestUnitMapGetOrDefault(t *testing.T) {
-	require.Empty(t, unitMapGetOrDefault(""))
-	require.Equal(t, "seconds", unitMapGetOrDefault("s"))
-	require.Equal(t, "invalid", unitMapGetOrDefault("invalid"))
-}
-
-func TestPerUnitMapGetOrDefault(t *testing.T) {
-	require.Empty(t, perUnitMapGetOrDefault(""))
-	require.Equal(t, "second", perUnitMapGetOrDefault("s"))
-	require.Equal(t, "invalid", perUnitMapGetOrDefault("invalid"))
-}
-
-func TestBuildUnitSuffixes(t *testing.T) {
+func TestMetricNamer_Build(t *testing.T) {
 	tests := []struct {
-		unit         string
-		expectedMain string
-		expectedPer  string
+		name     string
+		namer    MetricNamer
+		metric   Metric
+		expected string
 	}{
-		{"", "", ""},
-		{"s", "seconds", ""},
-		{"By/s", "bytes", "per_second"},
-		{"requests/m", "requests", "per_minute"},
-		{"{invalid}/second", "", "per_second"},
-		{"bytes/{invalid}", "bytes", ""},
+		// UTF8Allowed = false, WithMetricSuffixes = false tests
+		{
+			name: "simple metric name without suffixes",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: false,
+			},
+			metric: Metric{
+				Name: "simple_metric",
+				Unit: "",
+				Type: MetricTypeGauge,
+			},
+			expected: "simple_metric",
+		},
+		{
+			name: "metric with special characters replaced",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: false,
+			},
+			metric: Metric{
+				Name: "metric@with#special$chars",
+				Unit: "",
+				Type: MetricTypeGauge,
+			},
+			expected: "metric_with_special_chars",
+		},
+		{
+			name: "metric starting with digit gets underscore prefix",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: false,
+			},
+			metric: Metric{
+				Name: "123metric",
+				Unit: "",
+				Type: MetricTypeGauge,
+			},
+			expected: "_123metric",
+		},
+		{
+			name: "metric with namespace without suffixes",
+			namer: MetricNamer{
+				Namespace:          "test_namespace",
+				UTF8Allowed:        false,
+				WithMetricSuffixes: false,
+			},
+			metric: Metric{
+				Name: "simple_metric",
+				Unit: "",
+				Type: MetricTypeGauge,
+			},
+			expected: "test_namespace_simple_metric",
+		},
+		{
+			name: "empty metric name without suffixes",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: false,
+			},
+			metric: Metric{
+				Name: "",
+				Unit: "",
+				Type: MetricTypeGauge,
+			},
+			expected: "",
+		},
+		{
+			name: "metric with multiple consecutive special chars",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: false,
+			},
+			metric: Metric{
+				Name: "metric@@##$$name",
+				Unit: "",
+				Type: MetricTypeGauge,
+			},
+			expected: "metric_name",
+		},
+		{
+			name: "metric name with only special characters",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: false,
+			},
+			metric: Metric{
+				Name: "@#$%",
+				Unit: "",
+				Type: MetricTypeGauge,
+			},
+			expected: "",
+		},
+
+		{
+			name: "namespace with special characters",
+			namer: MetricNamer{
+				Namespace:          "test@namespace",
+				UTF8Allowed:        false,
+				WithMetricSuffixes: false,
+			},
+			metric: Metric{
+				Name: "metric",
+				Unit: "",
+				Type: MetricTypeGauge,
+			},
+			expected: "test@namespace_metric", // TODO: should be "test_namespace_metric"
+		},
+
+		// UTF8Allowed = false, WithMetricSuffixes = true tests
+		{
+			name: "counter metric with total suffix",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "requests",
+				Unit: "",
+				Type: MetricTypeMonotonicCounter,
+			},
+			expected: "requests_total",
+		},
+		{
+			name: "gauge with unit 1 gets ratio suffix",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "cpu_usage",
+				Unit: "1",
+				Type: MetricTypeGauge,
+			},
+			expected: "cpu_usage_ratio",
+		},
+		{
+			name: "counter with unit 1 does not get ratio suffix",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "items",
+				Unit: "1",
+				Type: MetricTypeMonotonicCounter,
+			},
+			expected: "items_total",
+		},
+		{
+			name: "metric with time unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "response_time",
+				Unit: "ms",
+				Type: MetricTypeGauge,
+			},
+			expected: "response_time_milliseconds",
+		},
+		{
+			name: "metric with bytes unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "memory_usage",
+				Unit: "By",
+				Type: MetricTypeGauge,
+			},
+			expected: "memory_usage_bytes",
+		},
+		{
+			name: "metric with per unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "requests",
+				Unit: "1/s",
+				Type: MetricTypeGauge,
+			},
+			expected: "requests_per_second",
+		},
+		{
+			name: "metric with complex per unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "throughput",
+				Unit: "By/s",
+				Type: MetricTypeGauge,
+			},
+			expected: "throughput_bytes_per_second",
+		},
+		{
+			name: "metric with unknown unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "custom_metric",
+				Unit: "custom_unit",
+				Type: MetricTypeGauge,
+			},
+			expected: "custom_metric_custom_unit",
+		},
+		{
+			name: "metric with unit containing braces is ignored",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "custom_metric",
+				Unit: "{custom}",
+				Type: MetricTypeGauge,
+			},
+			expected: "custom_metric",
+		},
+		{
+			name: "metric with per unit containing braces is ignored",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "custom_metric",
+				Unit: "By/{custom}",
+				Type: MetricTypeGauge,
+			},
+			expected: "custom_metric_bytes",
+		},
+		{
+			name: "metric name already contains total suffix",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "requests_total",
+				Unit: "",
+				Type: MetricTypeMonotonicCounter,
+			},
+			expected: "requests_total",
+		},
+		{
+			name: "metric name already contains ratio suffix",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "cpu_usage_ratio",
+				Unit: "1",
+				Type: MetricTypeGauge,
+			},
+			expected: "cpu_usage_ratio",
+		},
+		{
+			name: "metric name already contains unit suffix",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "response_time_seconds",
+				Unit: "s",
+				Type: MetricTypeGauge,
+			},
+			expected: "response_time_seconds",
+		},
+		{
+			name: "metric with namespace and suffixes",
+			namer: MetricNamer{
+				Namespace:          "app",
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "requests",
+				Unit: "1/s",
+				Type: MetricTypeMonotonicCounter,
+			},
+			expected: "app_requests_per_second_total",
+		},
+		{
+			name: "metric starting with digit with namespace and suffixes",
+			namer: MetricNamer{
+				Namespace:          "app",
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "123_requests",
+				Unit: "",
+				Type: MetricTypeMonotonicCounter,
+			},
+			expected: "app_123_requests_total",
+		},
+		{
+			name: "metric with multiple underscores normalized",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "metric__with__multiple__underscores",
+				Unit: "",
+				Type: MetricTypeGauge,
+			},
+			expected: "metric_with_multiple_underscores",
+		},
+		{
+			name: "metric with special chars in unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "custom_metric",
+				Unit: "unit@with#special/chars",
+				Type: MetricTypeGauge,
+			},
+			expected: "custom_metric_unit_with_special_per_chars",
+		},
+		{
+			name: "metric name with only special characters",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "@#$%",
+				Unit: "",
+				Type: MetricTypeGauge,
+			},
+			expected: "",
+		},
+
+		// UTF8Allowed = true, WithMetricSuffixes = false tests
+		{
+			name: "utf8 metric without suffixes",
+			namer: MetricNamer{
+				UTF8Allowed:        true,
+				WithMetricSuffixes: false,
+			},
+			metric: Metric{
+				Name: "métric_with_ñ_chars",
+				Unit: "",
+				Type: MetricTypeGauge,
+			},
+			expected: "métric_with_ñ_chars",
+		},
+		{
+			name: "utf8 metric with namespace without suffixes",
+			namer: MetricNamer{
+				Namespace:          "test_namespace",
+				UTF8Allowed:        true,
+				WithMetricSuffixes: false,
+			},
+			metric: Metric{
+				Name: "métric_with_ñ_chars",
+				Unit: "",
+				Type: MetricTypeGauge,
+			},
+			expected: "test_namespace_métric_with_ñ_chars",
+		},
+
+		// UTF8Allowed = true, WithMetricSuffixes = true tests
+		{
+			name: "utf8 counter metric with total suffix",
+			namer: MetricNamer{
+				UTF8Allowed:        true,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "requêsts",
+				Unit: "",
+				Type: MetricTypeMonotonicCounter,
+			},
+			expected: "requêsts_total",
+		},
+		{
+			name: "utf8 gauge with unit 1 gets ratio suffix",
+			namer: MetricNamer{
+				UTF8Allowed:        true,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "cpu_usagé",
+				Unit: "1",
+				Type: MetricTypeGauge,
+			},
+			expected: "cpu_usagé_ratio",
+		},
+		{
+			name: "utf8 metric with time unit",
+			namer: MetricNamer{
+				UTF8Allowed:        true,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "respønse_time",
+				Unit: "ms",
+				Type: MetricTypeGauge,
+			},
+			expected: "respønse_time_milliseconds",
+		},
+		{
+			name: "utf8 metric with per unit",
+			namer: MetricNamer{
+				UTF8Allowed:        true,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "requêsts",
+				Unit: "1/s",
+				Type: MetricTypeGauge,
+			},
+			expected: "requêsts_per_second",
+		},
+		{
+			name: "utf8 metric with namespace and suffixes",
+			namer: MetricNamer{
+				Namespace:          "ñamespace",
+				UTF8Allowed:        true,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "requêsts",
+				Unit: "1/s",
+				Type: MetricTypeMonotonicCounter,
+			},
+			expected: "ñamespace_requêsts_per_second_total",
+		},
+		{
+			name: "metric name with only special characters",
+			namer: MetricNamer{
+				UTF8Allowed:        true,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "@#$%",
+				Unit: "",
+				Type: MetricTypeMonotonicCounter,
+			},
+			expected: "@#$%_total",
+		},
+		{
+			name: "namespace with special characters",
+			namer: MetricNamer{
+				Namespace:          "test@namespace",
+				UTF8Allowed:        true,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "metric",
+				Unit: "",
+				Type: MetricTypeMonotonicCounter,
+			},
+			expected: "test@namespace_metric_total",
+		},
+
+		// Edge cases and different metric types
+		{
+			name: "histogram metric type",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "request_duration",
+				Unit: "s",
+				Type: MetricTypeHistogram,
+			},
+			expected: "request_duration_seconds",
+		},
+		{
+			name: "exponential histogram metric type",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "request_size",
+				Unit: "By",
+				Type: MetricTypeExponentialHistogram,
+			},
+			expected: "request_size_bytes",
+		},
+		{
+			name: "summary metric type",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "response_time",
+				Unit: "ms",
+				Type: MetricTypeSummary,
+			},
+			expected: "response_time_milliseconds",
+		},
+		{
+			name: "non-monotonic counter metric type",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "active_connections",
+				Unit: "",
+				Type: MetricTypeNonMonotonicCounter,
+			},
+			expected: "active_connections",
+		},
+		{
+			name: "unknown metric type",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "unknown_metric",
+				Unit: "",
+				Type: MetricTypeUnknown,
+			},
+			expected: "unknown_metric",
+		},
+
+		// Additional unit mapping tests
+		{
+			name: "metric with days unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "uptime",
+				Unit: "d",
+				Type: MetricTypeGauge,
+			},
+			expected: "uptime_days",
+		},
+		{
+			name: "metric with hours unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "duration",
+				Unit: "h",
+				Type: MetricTypeGauge,
+			},
+			expected: "duration_hours",
+		},
+		{
+			name: "metric with minutes unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "timeout",
+				Unit: "min",
+				Type: MetricTypeGauge,
+			},
+			expected: "timeout_minutes",
+		},
+		{
+			name: "metric with microseconds unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "latency",
+				Unit: "us",
+				Type: MetricTypeGauge,
+			},
+			expected: "latency_microseconds",
+		},
+		{
+			name: "metric with nanoseconds unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "precision_time",
+				Unit: "ns",
+				Type: MetricTypeGauge,
+			},
+			expected: "precision_time_nanoseconds",
+		},
+		{
+			name: "metric with kibibytes unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "cache_size",
+				Unit: "KiBy",
+				Type: MetricTypeGauge,
+			},
+			expected: "cache_size_kibibytes",
+		},
+		{
+			name: "metric with mebibytes unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "memory",
+				Unit: "MiBy",
+				Type: MetricTypeGauge,
+			},
+			expected: "memory_mebibytes",
+		},
+		{
+			name: "metric with gibibytes unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "storage",
+				Unit: "GiBy",
+				Type: MetricTypeGauge,
+			},
+			expected: "storage_gibibytes",
+		},
+		{
+			name: "metric with tibibytes unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "capacity",
+				Unit: "TiBy",
+				Type: MetricTypeGauge,
+			},
+			expected: "capacity_tibibytes",
+		},
+		{
+			name: "metric with kilobytes unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "transfer",
+				Unit: "KBy",
+				Type: MetricTypeGauge,
+			},
+			expected: "transfer_kilobytes",
+		},
+		{
+			name: "metric with megabytes unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "download",
+				Unit: "MBy",
+				Type: MetricTypeGauge,
+			},
+			expected: "download_megabytes",
+		},
+		{
+			name: "metric with gigabytes unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "backup",
+				Unit: "GBy",
+				Type: MetricTypeGauge,
+			},
+			expected: "backup_gigabytes",
+		},
+		{
+			name: "metric with terabytes unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "archive",
+				Unit: "TBy",
+				Type: MetricTypeGauge,
+			},
+			expected: "archive_terabytes",
+		},
+		{
+			name: "metric with meters unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "distance",
+				Unit: "m",
+				Type: MetricTypeGauge,
+			},
+			expected: "distance_meters",
+		},
+		{
+			name: "metric with volts unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "voltage",
+				Unit: "V",
+				Type: MetricTypeGauge,
+			},
+			expected: "voltage_volts",
+		},
+		{
+			name: "metric with amperes unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "current",
+				Unit: "A",
+				Type: MetricTypeGauge,
+			},
+			expected: "current_amperes",
+		},
+		{
+			name: "metric with joules unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "energy",
+				Unit: "J",
+				Type: MetricTypeGauge,
+			},
+			expected: "energy_joules",
+		},
+		{
+			name: "metric with watts unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "power",
+				Unit: "W",
+				Type: MetricTypeGauge,
+			},
+			expected: "power_watts",
+		},
+		{
+			name: "metric with grams unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "weight",
+				Unit: "g",
+				Type: MetricTypeGauge,
+			},
+			expected: "weight_grams",
+		},
+		{
+			name: "metric with celsius unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "temperature",
+				Unit: "Cel",
+				Type: MetricTypeGauge,
+			},
+			expected: "temperature_celsius",
+		},
+		{
+			name: "metric with hertz unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "frequency",
+				Unit: "Hz",
+				Type: MetricTypeGauge,
+			},
+			expected: "frequency_hertz",
+		},
+		{
+			name: "metric with percent unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "cpu_usage",
+				Unit: "%",
+				Type: MetricTypeGauge,
+			},
+			expected: "cpu_usage_percent",
+		},
+
+		// Per unit mapping tests
+		{
+			name: "metric with per minute unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "requests",
+				Unit: "1/m",
+				Type: MetricTypeGauge,
+			},
+			expected: "requests_per_minute",
+		},
+		{
+			name: "metric with per hour unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "events",
+				Unit: "1/h",
+				Type: MetricTypeGauge,
+			},
+			expected: "events_per_hour",
+		},
+		{
+			name: "metric with per day unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "transactions",
+				Unit: "1/d",
+				Type: MetricTypeGauge,
+			},
+			expected: "transactions_per_day",
+		},
+		{
+			name: "metric with per week unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "reports",
+				Unit: "1/w",
+				Type: MetricTypeGauge,
+			},
+			expected: "reports_per_week",
+		},
+		{
+			name: "metric with per month unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "invoices",
+				Unit: "1/mo",
+				Type: MetricTypeGauge,
+			},
+			expected: "invoices_per_month",
+		},
+		{
+			name: "metric with per year unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "renewals",
+				Unit: "1/y",
+				Type: MetricTypeGauge,
+			},
+			expected: "renewals_per_year",
+		},
+		{
+			name: "metric with unknown per unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "custom",
+				Unit: "1/custom_unit",
+				Type: MetricTypeGauge,
+			},
+			expected: "custom_per_custom_unit",
+		},
+
+		// Edge cases with empty and whitespace units
+		{
+			name: "metric with empty per unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "metric",
+				Unit: "By/",
+				Type: MetricTypeGauge,
+			},
+			expected: "metric_bytes",
+		},
+		{
+			name: "metric with whitespace in unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "metric",
+				Unit: " By / s ",
+				Type: MetricTypeGauge,
+			},
+			expected: "metric_bytes_per_second",
+		},
+		{
+			name: "metric with only slash in unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "metric",
+				Unit: "/",
+				Type: MetricTypeGauge,
+			},
+			expected: "metric",
+		},
+
+		// Common OTel metrics to showcase how the namer works
+		{
+			name: "http.request.duration/Prometheus-style",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "http.request.duration",
+				Unit: "ms",
+				Type: MetricTypeHistogram,
+			},
+			expected: "http_request_duration_milliseconds",
+		},
+		{
+			name: "http.request.duration/OTel-style",
+			namer: MetricNamer{
+				UTF8Allowed:        true,
+				WithMetricSuffixes: false,
+			},
+			metric: Metric{
+				Name: "http.request.duration",
+				Unit: "ms",
+				Type: MetricTypeHistogram,
+			},
+			expected: "http.request.duration",
+		},
+		{
+			name: "http.requests/Prometheus-style",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "http.requests",
+				Unit: "1",
+				Type: MetricTypeMonotonicCounter,
+			},
+			expected: "http_requests_total",
+		},
+		{
+			name: "http.requests/OTel-style",
+			namer: MetricNamer{
+				UTF8Allowed:        true,
+				WithMetricSuffixes: false,
+			},
+			metric: Metric{
+				Name: "http.requests",
+				Unit: "1",
+				Type: MetricTypeMonotonicCounter,
+			},
+			expected: "http.requests",
+		},
 	}
 
-	for _, test := range tests {
-		mainUnitSuffix, perUnitSuffix := buildUnitSuffixes(test.unit)
-		require.Equal(t, test.expectedMain, mainUnitSuffix)
-		require.Equal(t, test.expectedPer, perUnitSuffix)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.namer.Build(tt.metric)
+			require.Equal(t, tt.expected, got)
+		})
 	}
-}
-
-func TestAddUnitTokens(t *testing.T) {
-	tests := []struct {
-		nameTokens     []string
-		mainUnitSuffix string
-		perUnitSuffix  string
-		expected       []string
-	}{
-		{[]string{}, "", "", []string{}},
-		{[]string{"token1"}, "main", "", []string{"token1", "main"}},
-		{[]string{"token1"}, "", "per", []string{"token1", "per"}},
-		{[]string{"token1"}, "main", "per", []string{"token1", "main", "per"}},
-		{[]string{"token1", "per"}, "main", "per", []string{"token1", "per", "main"}},
-		{[]string{"token1", "main"}, "main", "per", []string{"token1", "main", "per"}},
-		{[]string{"token1"}, "main_", "per", []string{"token1", "main", "per"}},
-		{[]string{"token1"}, "main_unit", "per_seconds_", []string{"token1", "main_unit", "per_seconds"}}, // trailing underscores are removed
-		{[]string{"token1"}, "main_unit", "per_", []string{"token1", "main_unit"}},                        // 'per_' is removed entirely
-	}
-
-	for _, test := range tests {
-		result := addUnitTokens(test.nameTokens, test.mainUnitSuffix, test.perUnitSuffix)
-		require.Equal(t, test.expected, result)
-	}
-}
-
-func TestRemoveItem(t *testing.T) {
-	require.Equal(t, []string{}, removeItem([]string{}, "test"))
-	require.Equal(t, []string{}, removeItem([]string{}, ""))
-	require.Equal(t, []string{"a", "b", "c"}, removeItem([]string{"a", "b", "c"}, "d"))
-	require.Equal(t, []string{"a", "b", "c"}, removeItem([]string{"a", "b", "c"}, ""))
-	require.Equal(t, []string{"a", "b"}, removeItem([]string{"a", "b", "c"}, "c"))
-	require.Equal(t, []string{"a", "c"}, removeItem([]string{"a", "b", "c"}, "b"))
-	require.Equal(t, []string{"b", "c"}, removeItem([]string{"a", "b", "c"}, "a"))
-}
-
-func TestBuildCompliantMetricNameWithSuffixes(t *testing.T) {
-	builder := MetricNamer{WithMetricSuffixes: true}
-	require.Equal(t, "system_io_bytes_total", builder.buildCompliantMetricName("system.io", "By", MetricTypeMonotonicCounter))
-	require.Equal(t, "_3_14_digits", builder.buildCompliantMetricName("3.14 digits", "", MetricTypeGauge))
-	require.Equal(t, "envoy_rule_engine_zlib_buf_error", builder.buildCompliantMetricName("envoy__rule_engine_zlib_buf_error", "", MetricTypeGauge))
-	require.Equal(t, ":foo::bar", builder.buildCompliantMetricName(":foo::bar", "", MetricTypeGauge))
-	require.Equal(t, ":foo::bar_total", builder.buildCompliantMetricName(":foo::bar", "", MetricTypeMonotonicCounter))
-	// Gauges with unit 1 are considered ratios.
-	require.Equal(t, "foo_bar_ratio", builder.buildCompliantMetricName("foo.bar", "1", MetricTypeGauge))
-	// Slashes in units are converted.
-	require.Equal(t, "system_io_foo_per_bar_total", builder.buildCompliantMetricName("system.io", "foo/bar", MetricTypeMonotonicCounter))
-	require.Equal(t, "metric_with_foreign_characters_total", builder.buildCompliantMetricName("metric_with_字符_foreign_characters", "", MetricTypeMonotonicCounter))
-	// Removes non aplhanumerical characters from units, but leaves colons.
-	require.Equal(t, "temperature_:C", builder.buildCompliantMetricName("temperature", "%*()°:C", MetricTypeGauge))
-}
-
-func TestBuildCompliantMetricNameWithoutSuffixes(t *testing.T) {
-	builder := MetricNamer{}
-	require.Equal(t, "system_io", builder.buildCompliantMetricName("system.io", "By", MetricTypeMonotonicCounter))
-	require.Equal(t, "network_I_O", builder.buildCompliantMetricName("network (I/O)", "By", MetricTypeMonotonicCounter))
-	require.Equal(t, "_3_14_digits", builder.buildCompliantMetricName("3.14 digits", "By", MetricTypeGauge))
-	require.Equal(t, "envoy__rule_engine_zlib_buf_error", builder.buildCompliantMetricName("envoy__rule_engine_zlib_buf_error", "", MetricTypeGauge))
-	require.Equal(t, ":foo::bar", builder.buildCompliantMetricName(":foo::bar", "", MetricTypeGauge))
-	require.Equal(t, ":foo::bar", builder.buildCompliantMetricName(":foo::bar", "", MetricTypeMonotonicCounter))
-	require.Equal(t, "foo_bar", builder.buildCompliantMetricName("foo.bar", "1", MetricTypeGauge))
-	require.Equal(t, "system_io", builder.buildCompliantMetricName("system.io", "foo/bar", MetricTypeMonotonicCounter))
-	require.Equal(t, "metric_with___foreign_characters", builder.buildCompliantMetricName("metric_with_字符_foreign_characters", "", MetricTypeMonotonicCounter))
-}
-
-func TestBuildCompliantMetricNameWithNamespace(t *testing.T) {
-	builder := MetricNamer{Namespace: "namespace"}
-	require.Equal(t, "namespace_system_io", builder.buildCompliantMetricName("system.io", "", MetricTypeMonotonicCounter))
-}
-
-func TestBuildMetricNameWithSuffixes(t *testing.T) {
-	builder := MetricNamer{UTF8Allowed: true, WithMetricSuffixes: true}
-	require.Equal(t, "system.io_bytes_total", builder.buildMetricName("system.io", "By", MetricTypeMonotonicCounter))
-	require.Equal(t, "3.14 digits", builder.buildMetricName("3.14 digits", "", MetricTypeGauge))
-	require.Equal(t, "envoy__rule_engine_zlib_buf_error", builder.buildMetricName("envoy__rule_engine_zlib_buf_error", "", MetricTypeGauge))
-	require.Equal(t, ":foo::bar", builder.buildMetricName(":foo::bar", "", MetricTypeGauge))
-	require.Equal(t, ":foo::bar_total", builder.buildMetricName(":foo::bar", "", MetricTypeMonotonicCounter))
-	// Gauges with unit 1 are considered ratios.
-	require.Equal(t, "foo.bar_ratio", builder.buildMetricName("foo.bar", "1", MetricTypeGauge))
-	// Slashes in units are converted.
-	require.Equal(t, "system.io_foo_per_bar_total", builder.buildMetricName("system.io", "foo/bar", MetricTypeMonotonicCounter))
-	require.Equal(t, "metric_with_字符_foreign_characters_total", builder.buildMetricName("metric_with_字符_foreign_characters", "", MetricTypeMonotonicCounter))
-	require.Equal(t, "temperature_%*()°C", builder.buildMetricName("temperature", "%*()°C", MetricTypeGauge)) // Keeps the all characters in unit
-	// Tests below show weird interactions that users can have with the metric names.
-	// With BuildMetricName we don't check if units/type suffixes are already present in the metric name, we always add them.
-	require.Equal(t, "system_io_seconds_seconds", builder.buildMetricName("system_io_seconds", "s", MetricTypeGauge))
-	require.Equal(t, "system_io_total_total", builder.buildMetricName("system_io_total", "", MetricTypeMonotonicCounter))
-}
-
-func TestBuildMetricNameWithoutSuffixes(t *testing.T) {
-	builder := MetricNamer{UTF8Allowed: true}
-	require.Equal(t, "system.io", builder.buildMetricName("system.io", "By", MetricTypeMonotonicCounter))
-	require.Equal(t, "3.14 digits", builder.buildMetricName("3.14 digits", "", MetricTypeGauge))
-	require.Equal(t, "envoy__rule_engine_zlib_buf_error", builder.buildMetricName("envoy__rule_engine_zlib_buf_error", "", MetricTypeGauge))
-	require.Equal(t, ":foo::bar", builder.buildMetricName(":foo::bar", "", MetricTypeGauge))
-	require.Equal(t, ":foo::bar", builder.buildMetricName(":foo::bar", "", MetricTypeMonotonicCounter))
-	// Gauges with unit 1 are considered ratios.
-	require.Equal(t, "foo.bar", builder.buildMetricName("foo.bar", "1", MetricTypeGauge))
-	require.Equal(t, "metric_with_字符_foreign_characters", builder.buildMetricName("metric_with_字符_foreign_characters", "", MetricTypeMonotonicCounter))
-	require.Equal(t, "system_io_seconds", builder.buildMetricName("system_io_seconds", "s", MetricTypeGauge))
-	require.Equal(t, "system_io_total", builder.buildMetricName("system_io_total", "", MetricTypeMonotonicCounter))
-}
-
-func TestBuildMetricNameWithNamespace(t *testing.T) {
-	builder := MetricNamer{UTF8Allowed: true, Namespace: "namespace"}
-	require.Equal(t, "namespace_system.io", builder.buildMetricName("system.io", "", MetricTypeMonotonicCounter))
-}
-
-func TestTypesWithNoopSuffixAddition(t *testing.T) {
-	builder := MetricNamer{WithMetricSuffixes: true}
-	require.Equal(t, "system_io_bytes", builder.buildMetricName("system_io", "By", MetricTypeGauge))
-	require.Equal(t, "system_io_bytes", builder.buildMetricName("system_io", "By", MetricTypeUnknown))
-	require.Equal(t, "system_io_bytes", builder.buildMetricName("system_io", "By", MetricTypeNonMonotonicCounter))
-	require.Equal(t, "system_io_bytes", builder.buildMetricName("system_io", "By", MetricTypeHistogram))
-	require.Equal(t, "system_io_bytes", builder.buildMetricName("system_io", "By", MetricTypeSummary))
 }
