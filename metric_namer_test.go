@@ -991,6 +991,60 @@ func TestMetricNamer_Build(t *testing.T) {
 			},
 			expected: "metric",
 		},
+
+		// Common OTel metrics to showcase how the namer works
+		{
+			name: "http.request.duration/Prometheus-style",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "http.request.duration",
+				Unit: "ms",
+				Type: MetricTypeHistogram,
+			},
+			expected: "http_request_duration_milliseconds",
+		},
+		{
+			name: "http.request.duration/OTel-style",
+			namer: MetricNamer{
+				UTF8Allowed:        true,
+				WithMetricSuffixes: false,
+			},
+			metric: Metric{
+				Name: "http.request.duration",
+				Unit: "ms",
+				Type: MetricTypeHistogram,
+			},
+			expected: "http.request.duration",
+		},
+		{
+			name: "http.requests/Prometheus-style",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "http.requests",
+				Unit: "1",
+				Type: MetricTypeMonotonicCounter,
+			},
+			expected: "http_requests_total",
+		},
+		{
+			name: "http.requests/OTel-style",
+			namer: MetricNamer{
+				UTF8Allowed:        true,
+				WithMetricSuffixes: false,
+			},
+			metric: Metric{
+				Name: "http.requests",
+				Unit: "1",
+				Type: MetricTypeMonotonicCounter,
+			},
+			expected: "http.requests",
+		},
 	}
 
 	for _, tt := range tests {
