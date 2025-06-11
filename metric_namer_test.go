@@ -20,9 +20,8 @@
 package otlptranslator
 
 import (
+	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
 func TestMetricNamer_Build(t *testing.T) {
@@ -1101,7 +1100,9 @@ func TestMetricNamer_Build(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Build metric name using MetricNamer
 			gotMetricName := tt.namer.Build(tt.metric)
-			require.Equal(t, tt.expectedMetricName, gotMetricName)
+			if tt.expectedMetricName != gotMetricName {
+				t.Errorf("namer.Build(%v), got %q, want %q", tt.metric, gotMetricName, tt.expectedMetricName)
+			}
 
 			// Build unit name using UnitNamer to verify correlation when suffixes are enabled
 			if tt.namer.WithMetricSuffixes {
@@ -1109,14 +1110,16 @@ func TestMetricNamer_Build(t *testing.T) {
 					UTF8Allowed: tt.namer.UTF8Allowed,
 				}
 				gotUnitName := unitNamer.Build(tt.metric.Unit)
-				require.Equal(t, tt.expectedUnitName, gotUnitName)
+				if tt.expectedUnitName != gotUnitName {
+					t.Errorf("unitNamer.Build(%q), got %q, want %q", tt.metric.Unit, gotUnitName, tt.expectedUnitName)
+				}
 
 				// Verify correlation: if UnitNamer produces a non-empty unit name,
 				// it should be contained in the metric name when WithMetricSuffixes=true
 				if gotUnitName != "" && tt.namer.WithMetricSuffixes {
-					require.Contains(t, gotMetricName, gotUnitName,
-						"Metric name '%s' should contain unit name '%s' when WithMetricSuffixes=true",
-						gotMetricName, gotUnitName)
+					if !strings.Contains(gotMetricName, gotUnitName) {
+						t.Errorf("Metric name '%q' should contain unit name '%s' when WithMetricSuffixes=true", gotMetricName, gotUnitName)
+					}
 				}
 			}
 		})

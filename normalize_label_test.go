@@ -19,8 +19,6 @@ package otlptranslator
 import (
 	"fmt"
 	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
 func TestNormalizeLabel(t *testing.T) {
@@ -46,9 +44,13 @@ func TestNormalizeLabel(t *testing.T) {
 				result := labelNamer.Build(test.label)
 
 				if utf8Allowed {
-					require.Equal(t, test.label, result)
+					if test.label != result {
+						t.Errorf("labelNamer.Build(%q), got %q, want %q", test.label, result, test.label)
+					}
 				} else {
-					require.Equal(t, test.expected, result)
+					if test.expected != result {
+						t.Errorf("labelNamer.Build(%q), got %q, want %q", test.label, result, test.expected)
+					}
 				}
 			})
 		}
