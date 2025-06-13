@@ -1101,7 +1101,7 @@ func TestMetricNamer_Build(t *testing.T) {
 			// Build metric name using MetricNamer
 			gotMetricName := tt.namer.Build(tt.metric)
 			if gotMetricName != tt.wantMetricName {
-				t.Errorf("namer.Build(%v) = %q, want %q", tt.metric, gotMetricName, tt.wantMetricName)
+				t.Errorf("MetricNamer.Build(%v) = %q, want %q", tt.metric, gotMetricName, tt.wantMetricName)
 			}
 
 			// Build unit name using UnitNamer to verify correlation when suffixes are enabled
@@ -1111,7 +1111,7 @@ func TestMetricNamer_Build(t *testing.T) {
 				}
 				gotUnitName := unitNamer.Build(tt.metric.Unit)
 				if gotUnitName != tt.wantUnitName {
-					t.Errorf("unitNamer.Build(%q) = %q, want %q", tt.metric.Unit, gotUnitName, tt.wantUnitName)
+					t.Errorf("UnitNamer.Build(%q) = %q, want %q", tt.metric.Unit, gotUnitName, tt.wantUnitName)
 				}
 
 				// Verify correlation: if UnitNamer produces a non-empty unit name,

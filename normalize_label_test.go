@@ -41,7 +41,7 @@ func TestNormalizeLabel(t *testing.T) {
 			labelNamer := LabelNamer{}
 			got := labelNamer.Build(tt.label)
 			if got != tt.sanitized {
-				t.Errorf("labelNamer.Build(%q) = %q, want %q", tt.label, got, tt.sanitized)
+				t.Errorf("LabelNamer.Build(%q) = %q, want %q", tt.label, got, tt.sanitized)
 			}
 		})
 	}
@@ -53,7 +53,7 @@ func TestNormalizeLabelUTF8Allowed(t *testing.T) {
 			labelNamer := LabelNamer{UTF8Allowed: true}
 			got := labelNamer.Build(tt.label)
 			if got != tt.label {
-				t.Errorf("labelNamer.Build(%q) = %q, want %q", tt.label, got, tt.label)
+				t.Errorf("LabelNamer.Build(%q) = %q, want %q", tt.label, got, tt.label)
 			}
 		})
 	}
