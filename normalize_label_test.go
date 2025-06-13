@@ -17,42 +17,44 @@
 package otlptranslator
 
 import (
-	"fmt"
 	"testing"
 )
 
+var labelTestCases = []struct {
+	label     string
+	sanitized string
+}{
+	{"", ""},
+	{"label:with:colons", "label_with_colons"},
+	{"LabelWithCapitalLetters", "LabelWithCapitalLetters"},
+	{"label!with&special$chars)", "label_with_special_chars_"},
+	{"label_with_foreign_characters_字符", "label_with_foreign_characters___"},
+	{"label.with.dots", "label_with_dots"},
+	{"123label", "key_123label"},
+	{"_label_starting_with_underscore", "key_label_starting_with_underscore"},
+	{"__label_starting_with_2underscores", "__label_starting_with_2underscores"},
+}
+
 func TestNormalizeLabel(t *testing.T) {
-	tests := []struct {
-		label    string
-		expected string
-	}{
-		{"", ""},
-		{"label:with:colons", "label_with_colons"},
-		{"LabelWithCapitalLetters", "LabelWithCapitalLetters"},
-		{"label!with&special$chars)", "label_with_special_chars_"},
-		{"label_with_foreign_characters_字符", "label_with_foreign_characters___"},
-		{"label.with.dots", "label_with_dots"},
-		{"123label", "key_123label"},
-		{"_label_starting_with_underscore", "key_label_starting_with_underscore"},
-		{"__label_starting_with_2underscores", "__label_starting_with_2underscores"},
+	for _, tt := range labelTestCases {
+		t.Run(tt.label, func(t *testing.T) {
+			labelNamer := LabelNamer{}
+			got := labelNamer.Build(tt.label)
+			if got != tt.sanitized {
+				t.Errorf("labelNamer.Build(%q) = %q, want %q", tt.label, got, tt.sanitized)
+			}
+		})
 	}
+}
 
-	for i, test := range tests {
-		for _, utf8Allowed := range []bool{true, false} {
-			t.Run(fmt.Sprintf("test_%d", i), func(t *testing.T) {
-				labelNamer := LabelNamer{UTF8Allowed: utf8Allowed}
-				result := labelNamer.Build(test.label)
-
-				if utf8Allowed {
-					if test.label != result {
-						t.Errorf("labelNamer.Build(%q), got %q, want %q", test.label, result, test.label)
-					}
-				} else {
-					if test.expected != result {
-						t.Errorf("labelNamer.Build(%q), got %q, want %q", test.label, result, test.expected)
-					}
-				}
-			})
-		}
+func TestNormalizeLabelUTF8Allowed(t *testing.T) {
+	for _, tt := range labelTestCases {
+		t.Run(tt.label, func(t *testing.T) {
+			labelNamer := LabelNamer{UTF8Allowed: true}
+			got := labelNamer.Build(tt.label)
+			if got != tt.label {
+				t.Errorf("labelNamer.Build(%q) = %q, want %q", tt.label, got, tt.label)
+			}
+		})
 	}
 }
