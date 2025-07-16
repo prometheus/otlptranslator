@@ -128,7 +128,7 @@ func TestMetricNamer_Build(t *testing.T) {
 		{
 			name: "namespace with special characters",
 			namer: MetricNamer{
-				Namespace:          "test@namespace",
+				Namespace:          "test@namespace!!??",
 				UTF8Allowed:        false,
 				WithMetricSuffixes: false,
 			},
@@ -137,8 +137,7 @@ func TestMetricNamer_Build(t *testing.T) {
 				Unit: "",
 				Type: MetricTypeGauge,
 			},
-			wantMetricName: "test@namespace_metric", // TODO: should be "test_namespace_metric"
-
+			wantMetricName: "test_namespace_metric",
 		},
 
 		// UTF8Allowed = false, WithMetricSuffixes = true tests

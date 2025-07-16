@@ -120,7 +120,10 @@ func (mn *MetricNamer) buildCompliantMetricName(name, unit string, metricType Me
 
 	// Namespace?
 	if mn.Namespace != "" {
-		return mn.Namespace + "_" + metricName
+		namespace := strings.Join(strings.FieldsFunc(mn.Namespace, func(r rune) bool {
+			return invalidMetricCharRE.MatchString(string(r))
+		}), "_")
+		return namespace + "_" + metricName
 	}
 
 	// Metric name starts with a digit? Prefix it with an underscore.
