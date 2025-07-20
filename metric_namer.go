@@ -81,6 +81,22 @@ var perUnitMap = map[string]string{
 }
 
 // MetricNamer is a helper struct to build metric names.
+// It converts OpenTelemetry Protocol (OTLP) metric names to Prometheus-compliant metric names.
+//
+// Example usage:
+//
+//	namer := MetricNamer{
+//		WithMetricSuffixes: true,
+//		UTF8Allowed:        false,
+//	}
+//
+//	metric := Metric{
+//		Name: "http.server.duration",
+//		Unit: "s",
+//		Type: MetricTypeHistogram,
+//	}
+//
+//	result := namer.Build(metric) // "http_server_duration_seconds"
 type MetricNamer struct {
 	Namespace          string
 	WithMetricSuffixes bool
@@ -88,6 +104,15 @@ type MetricNamer struct {
 }
 
 // Metric is a helper struct that holds information about a metric.
+// It represents an OpenTelemetry metric with its name, unit, and type.
+//
+// Example:
+//
+//	metric := Metric{
+//		Name: "http.server.request.duration",
+//		Unit: "s",
+//		Type: MetricTypeHistogram,
+//	}
 type Metric struct {
 	Name string
 	Unit string
@@ -96,10 +121,24 @@ type Metric struct {
 
 // Build builds a metric name for the specified metric.
 //
-// If UTF8Allowed is true, the metric name is returned as is, only with the addition of type/unit suffixes and namespace preffix if required.
-// Otherwise the metric name is normalized to be Prometheus-compliant.
-// See rules at https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels,
-// https://prometheus.io/docs/practices/naming/#metric-and-label-naming
+// The method applies different transformations based on the MetricNamer configuration:
+//   - If UTF8Allowed is true, preserves UTF-8 characters
+//   - If UTF8Allowed is false, replaces invalid characters with underscores
+//   - If WithMetricSuffixes is true, adds appropriate suffixes based on type and unit
+//
+// See rules at https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels
+//
+// Examples:
+//
+//	namer := MetricNamer{WithMetricSuffixes: true}
+//
+//	// Counter gets _total suffix
+//	counter := Metric{Name: "requests.count", Unit: "1", Type: MetricTypeMonotonicCounter}
+//	result := namer.Build(counter) // "requests_count_total"
+//
+//	// Gauge with unit suffix
+//	gauge := Metric{Name: "memory.usage", Unit: "By", Type: MetricTypeGauge}
+//	result = namer.Build(gauge) // "memory_usage_bytes"
 func (mn *MetricNamer) Build(metric Metric) string {
 	if mn.UTF8Allowed {
 		return mn.buildMetricName(metric.Name, metric.Unit, metric.Type)
