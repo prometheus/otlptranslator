@@ -18,7 +18,7 @@
 // metrics while following the official OpenTelemetry to Prometheus compatibility specification.
 //
 // Main components:
-//   - MetricNamer: Converts OTLP metric names to Prometheus metric names
-//   - LabelNamer: Normalizes OTLP attribute names to Prometheus label names
+//   - MetricNamer: Translates OTLP metric names to Prometheus metric names
+//   - LabelNamer: Translates OTLP attribute names to Prometheus label names
 //   - UnitNamer: Translates OTLP units to Prometheus unit conventions
 package otlptranslator

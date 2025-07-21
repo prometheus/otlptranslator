@@ -39,8 +39,7 @@ type LabelNamer struct {
 //
 // Translation rules:
 //   - Replaces invalid characters with underscores
-//   - Prefixes labels starting with digits with "key_"
-//   - Prefixes single underscore labels with "key"
+//   - Prefixes labels with invalid start characters (numbers or `_`) with "key"
 //   - Preserves double underscore labels (reserved names)
 //   - If UTF8Allowed is true, returns label as-is
 //

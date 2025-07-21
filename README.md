@@ -6,11 +6,11 @@ Part of the [Prometheus](https://prometheus.io/) ecosystem, following the [OpenT
 
 ## Features
 
-- ✅ **Metric Name and Label Translation**: Convert OTLP metric names and attributes to Prometheus-compliant format
-- ✅ **Unit Handling**: Translate OTLP units to Prometheus unit conventions
-- ✅ **Type-Aware Suffixes**: Automatically append `_total`, `_ratio` based on metric type
-- ✅ **Namespace Support**: Add configurable namespace prefixes
-- ✅ **UTF-8 Support**: Choose between Prometheus legacy scheme compliant metric/label names (`[a-zA-Z0-9:_]`) or untranslated metric/label names
+- **Metric Name and Label Translation**: Convert OTLP metric names and attributes to Prometheus-compliant format
+- **Unit Handling**: Translate OTLP units to Prometheus unit conventions
+- **Type-Aware Suffixes**: Optionally append `_total`, `_ratio` based on metric type
+- **Namespace Support**: Add configurable namespace prefixes
+- **UTF-8 Support**: Choose between Prometheus legacy scheme compliant metric/label names (`[a-zA-Z0-9:_]`) or untranslated metric/label names
 
 ## Installation
 
@@ -84,7 +84,7 @@ labelNamer := otlptranslator.LabelNamer{UTF8Allowed: false}
 labelNamer.Build("http.method")           // http_method
 labelNamer.Build("123invalid")            // key_123invalid  
 labelNamer.Build("_private")              // key_private
-labelNamer.Build("__reserved")            // __reserved (preserved)
+labelNamer.Build("__reserved__")          // __reserved__ (preserved)
 labelNamer.Build("label@with$symbols")    // label_with_symbols
 ```
 
@@ -115,18 +115,6 @@ productionNamer := otlptranslator.MetricNamer{
     UTF8Allowed:        false,
 }
 ```
-
-## Main Components
-
-| Component | Description |
-|-----------|-------------|
-| **MetricNamer** | Converts OTLP metric names to Prometheus format with configurable namespace, suffixes, and character set handling (`[a-zA-Z0-9:_]` or UTF-8) |
-| **LabelNamer** | Normalizes OTLP attribute names to valid Prometheus labels |
-| **UnitNamer** | Translates OTLP units (s, By, %, etc.) to Prometheus conventions |
-
-## OpenTelemetry Compatibility
-
-This library implements the [OpenTelemetry to Prometheus compatibility specification](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/compatibility/prometheus_and_openmetrics.md), ensuring proper metric name normalization, unit suffix handling, type-based suffix application, and label name sanitization.
 
 ## License
 
