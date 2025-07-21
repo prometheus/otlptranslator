@@ -101,6 +101,18 @@ type MetricNamer struct {
 	Namespace          string
 	WithMetricSuffixes bool
 	UTF8Allowed        bool
+	// If true and UTF8Allowed is false, multiple consecutive underscores are preserved between words.
+	// If UTF8Allowed is true, this option is ignored.
+	//
+	// WARNING: This option is highly discouraged and doesn't comply with the specification.
+	// It exists to help adopters who currently depend on this behavior. We will remove it in the future.
+	//
+	// Example:
+	//
+	//	metric := Metric{Name: "http..server..request..duration", Unit: "s", Type: MetricTypeHistogram}
+	//	namer := MetricNamer{WithMetricSuffixes: true, UTF8Allowed: false, KeepMultipleUnderscores: true}
+	//	result := namer.Build(metric) // "http__server__request__duration_seconds"
+	KeepMultipleUnderscores bool
 }
 
 // Metric is a helper struct that holds information about a metric.
@@ -149,19 +161,15 @@ func (mn *MetricNamer) Build(metric Metric) string {
 func (mn *MetricNamer) buildCompliantMetricName(name, unit string, metricType MetricType) string {
 	// Full normalization following standard Prometheus naming conventions
 	if mn.WithMetricSuffixes {
-		return normalizeName(name, unit, metricType, mn.Namespace)
+		return normalizeName(name, unit, metricType, mn.Namespace, mn.KeepMultipleUnderscores)
 	}
 
 	// Simple case (no full normalization, no units, etc.).
-	metricName := strings.Join(strings.FieldsFunc(name, func(r rune) bool {
-		return invalidMetricCharRE.MatchString(string(r))
-	}), "_")
+	metricName := replaceInvalidCharsInName(name, mn.KeepMultipleUnderscores)
 
 	// Namespace?
 	if mn.Namespace != "" {
-		namespace := strings.Join(strings.FieldsFunc(mn.Namespace, func(r rune) bool {
-			return invalidMetricCharRE.MatchString(string(r))
-		}), "_")
+		namespace := replaceInvalidCharsInName(mn.Namespace, mn.KeepMultipleUnderscores)
 		return namespace + "_" + metricName
 	}
 
@@ -171,6 +179,20 @@ func (mn *MetricNamer) buildCompliantMetricName(name, unit string, metricType Me
 	}
 
 	return metricName
+}
+
+// replaceInvalidCharsInName replaces invalid metric name characters with underscores.
+// If keepMultipleUnderscores is true, multiple consecutive underscores are preserved.
+func replaceInvalidCharsInName(name string, keepMultipleUnderscores bool) string {
+	if keepMultipleUnderscores {
+		// Replace invalid characters with underscores, preserving multiple underscores
+		return strings.Map(replaceInvalidMetricChar, name)
+	}
+
+	// Use FieldsFunc to collapse multiple consecutive separators (standard behavior)
+	return strings.Join(strings.FieldsFunc(name, func(r rune) bool {
+		return invalidMetricCharRE.MatchString(string(r))
+	}), "_")
 }
 
 var (
@@ -196,17 +218,37 @@ func replaceInvalidMetricChar(r rune) rune {
 }
 
 // Build a normalized name for the specified metric.
-func normalizeName(name, unit string, metricType MetricType, namespace string) string {
-	// Split metric name into "tokens" (of supported metric name runes).
-	// Note that this has the side effect of replacing multiple consecutive underscores with a single underscore.
-	// This is part of the OTel to Prometheus specification: https://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus.
-	nameTokens := strings.FieldsFunc(
-		name,
-		func(r rune) bool { return !isValidCompliantMetricChar(r) },
-	)
+// If keepMultipleUnderscores is true, multiple consecutive underscores are preserved.
+func normalizeName(name, unit string, metricType MetricType, namespace string, keepMultipleUnderscores bool) string {
+	var nameTokens []string
+	if !keepMultipleUnderscores {
+		// Standard behavior: split metric name into "tokens" (of supported metric name runes).
+		// This is part of the OTel to Prometheus specification: https://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus.
+		nameTokens = strings.FieldsFunc(
+			name,
+			func(r rune) bool { return !isValidCompliantMetricChar(r) },
+		)
+	} else {
+		// When preserving multiple underscores, we need a different approach
+		// Replace invalid characters with underscores but preserve existing underscore patterns
+		var result strings.Builder
+		result.Grow(len(name))
+		for _, r := range name {
+			if isValidCompliantMetricChar(r) {
+				result.WriteRune(r)
+			} else {
+				result.WriteRune('_')
+			}
+		}
+		cleanedName := result.String()
+
+		// Now we need to split this into tokens, but preserve multiple underscores
+		// We'll split on boundaries between valid characters and underscores
+		nameTokens = splitPreservingUnderscores(cleanedName)
+	}
 
 	mainUnitSuffix, perUnitSuffix := buildUnitSuffixes(unit)
-	nameTokens = addUnitTokens(nameTokens, cleanUpUnit(mainUnitSuffix), cleanUpUnit(perUnitSuffix))
+	nameTokens = addUnitTokens(nameTokens, cleanUpUnit(mainUnitSuffix, keepMultipleUnderscores), cleanUpUnit(perUnitSuffix, keepMultipleUnderscores), keepMultipleUnderscores)
 
 	// Append _total for Counters
 	if metricType == MetricTypeMonotonicCounter {
@@ -224,11 +266,23 @@ func normalizeName(name, unit string, metricType MetricType, namespace string) s
 
 	// Namespace?
 	if namespace != "" {
-		nameTokens = append([]string{namespace}, nameTokens...)
+		var namespaceTokens []string
+		if keepMultipleUnderscores {
+			cleanedNamespace := strings.Map(replaceInvalidMetricChar, namespace)
+			namespaceTokens = splitPreservingUnderscores(cleanedNamespace)
+		} else {
+			namespaceTokens = strings.FieldsFunc(namespace, func(r rune) bool { return !isValidCompliantMetricChar(r) })
+		}
+		nameTokens = append(namespaceTokens, nameTokens...)
 	}
 
 	// Build the string from the tokens, separated with underscores
-	normalizedName := strings.Join(nameTokens, "_")
+	var normalizedName string
+	if keepMultipleUnderscores {
+		normalizedName = joinPreservingUnderscores(nameTokens)
+	} else {
+		normalizedName = strings.Join(nameTokens, "_")
+	}
 
 	// Metric name cannot start with a digit, so prefix it with "_" in this case
 	if normalizedName != "" && unicode.IsDigit(rune(normalizedName[0])) {
@@ -238,36 +292,108 @@ func normalizeName(name, unit string, metricType MetricType, namespace string) s
 	return normalizedName
 }
 
-// addUnitTokens will add the suffixes to the nameTokens if they are not already present.
-// It will also remove trailing underscores from the main suffix to avoid double underscores
-// when joining the tokens.
-//
-// If the 'per' unit ends with underscore, the underscore will be removed. If the per unit is just
-// 'per_', it will be entirely removed.
-func addUnitTokens(nameTokens []string, mainUnitSuffix, perUnitSuffix string) []string {
-	if slices.Contains(nameTokens, mainUnitSuffix) {
-		mainUnitSuffix = ""
+// splitPreservingUnderscores splits a string into tokens while preserving multiple underscores
+func splitPreservingUnderscores(s string) []string {
+	if s == "" {
+		return nil
 	}
 
-	if perUnitSuffix == "per_" {
-		perUnitSuffix = ""
-	} else {
-		perUnitSuffix = strings.TrimSuffix(perUnitSuffix, "_")
-		if slices.Contains(nameTokens, perUnitSuffix) {
-			perUnitSuffix = ""
+	var tokens []string
+	var currentToken strings.Builder
+	var inUnderscores bool
+
+	for _, r := range s {
+		if r == '_' {
+			if !inUnderscores && currentToken.Len() > 0 {
+				// End of a non-underscore token
+				tokens = append(tokens, currentToken.String())
+				currentToken.Reset()
+			}
+			currentToken.WriteRune(r)
+			inUnderscores = true
+		} else {
+			if inUnderscores && currentToken.Len() > 0 {
+				// End of underscore sequence
+				tokens = append(tokens, currentToken.String())
+				currentToken.Reset()
+			}
+			currentToken.WriteRune(r)
+			inUnderscores = false
 		}
 	}
 
-	if perUnitSuffix != "" {
-		mainUnitSuffix = strings.TrimSuffix(mainUnitSuffix, "_")
+	if currentToken.Len() > 0 {
+		tokens = append(tokens, currentToken.String())
+	}
+
+	return tokens
+}
+
+// joinPreservingUnderscores joins tokens while preserving underscore sequences
+func joinPreservingUnderscores(tokens []string) string {
+	if len(tokens) == 0 {
+		return ""
+	}
+
+	var result strings.Builder
+	for i, token := range tokens {
+		if i > 0 && !strings.HasPrefix(token, "_") && !strings.HasSuffix(tokens[i-1], "_") {
+			// Add separator only if neither the previous token ends with _ nor current token starts with _
+			result.WriteByte('_')
+		}
+		result.WriteString(token)
+	}
+
+	return result.String()
+}
+
+// addUnitTokens will add the suffixes to the nameTokens if they are not already present.
+// It will also remove trailing underscores from the main suffix to avoid double underscores
+// when joining the tokens, unless keepMultipleUnderscores is true.
+//
+// If the 'per' unit ends with underscore, the underscore will be removed. If the per unit is just
+// 'per_', it will be entirely removed.
+func addUnitTokens(nameTokens []string, mainUnitSuffix, perUnitSuffix string, keepMultipleUnderscores bool) []string {
+	if !keepMultipleUnderscores {
+		// Check if main unit suffix is already present
+		if slices.Contains(nameTokens, mainUnitSuffix) {
+			mainUnitSuffix = ""
+		}
+
+		if perUnitSuffix == "per_" {
+			perUnitSuffix = ""
+		} else {
+			perUnitSuffix = strings.TrimSuffix(perUnitSuffix, "_")
+			if slices.Contains(nameTokens, perUnitSuffix) {
+				perUnitSuffix = ""
+			}
+		}
+
+		if perUnitSuffix != "" {
+			mainUnitSuffix = strings.TrimSuffix(mainUnitSuffix, "_")
+		}
+
+		if mainUnitSuffix != "" {
+			nameTokens = append(nameTokens, mainUnitSuffix)
+		}
+		if perUnitSuffix != "" {
+			nameTokens = append(nameTokens, perUnitSuffix)
+		}
+		return nameTokens
 	}
 
 	if mainUnitSuffix != "" {
-		nameTokens = append(nameTokens, mainUnitSuffix)
+		nameTokens = append(nameTokens, splitPreservingUnderscores(mainUnitSuffix)...)
 	}
+
 	if perUnitSuffix != "" {
-		nameTokens = append(nameTokens, perUnitSuffix)
+		if perUnitSuffix == "per_" {
+			// Skip empty per unit
+		} else {
+			nameTokens = append(nameTokens, splitPreservingUnderscores(perUnitSuffix)...)
+		}
 	}
+
 	return nameTokens
 }
 

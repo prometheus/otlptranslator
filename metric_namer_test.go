@@ -113,6 +113,20 @@ func TestMetricNamer_Build(t *testing.T) {
 			wantMetricName: "metric_name",
 		},
 		{
+			name: "metric with multiple consecutive special chars/keep multiple underscores",
+			namer: MetricNamer{
+				UTF8Allowed:             false,
+				WithMetricSuffixes:      false,
+				KeepMultipleUnderscores: true,
+			},
+			metric: Metric{
+				Name: "metric@@##$$name",
+				Unit: "",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "metric______name",
+		},
+		{
 			name: "metric name with only special characters",
 			namer: MetricNamer{
 				UTF8Allowed:        false,
@@ -359,6 +373,21 @@ func TestMetricNamer_Build(t *testing.T) {
 			},
 			wantMetricName: "metric_with_multiple_underscores_unit_multiple_underscores",
 			wantUnitName:   "unit_multiple_underscores",
+		},
+		{
+			name: "metric with multiple underscores normalized/keep multiple underscores",
+			namer: MetricNamer{
+				UTF8Allowed:             false,
+				WithMetricSuffixes:      true,
+				KeepMultipleUnderscores: true,
+			},
+			metric: Metric{
+				Name: "metric__with__multiple__underscores",
+				Unit: "unit__multiple__underscores",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "metric__with__multiple__underscores_unit__multiple__underscores",
+			wantUnitName:   "unit__multiple__underscores",
 		},
 		{
 			name: "metric with special chars in unit",
@@ -1106,7 +1135,8 @@ func TestMetricNamer_Build(t *testing.T) {
 			// Build unit name using UnitNamer to verify correlation when suffixes are enabled
 			if tt.namer.WithMetricSuffixes {
 				unitNamer := UnitNamer{
-					UTF8Allowed: tt.namer.UTF8Allowed,
+					UTF8Allowed:             tt.namer.UTF8Allowed,
+					KeepMultipleUnderscores: tt.namer.KeepMultipleUnderscores,
 				}
 				gotUnitName := unitNamer.Build(tt.metric.Unit)
 				if gotUnitName != tt.wantUnitName {
