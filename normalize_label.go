@@ -25,7 +25,7 @@ import (
 )
 
 // LabelNamer is a helper struct to build label names.
-// It normalizes OpenTelemetry Protocol (OTLP) attribute names to Prometheus-compliant label names.
+// It translates OpenTelemetry Protocol (OTLP) attribute names to Prometheus-compliant label names.
 //
 // Example usage:
 //
@@ -37,7 +37,7 @@ type LabelNamer struct {
 
 // Build normalizes the specified label to follow Prometheus label names standard.
 //
-// Normalization rules:
+// Translation rules:
 //   - Replaces invalid characters with underscores
 //   - Prefixes labels starting with digits with "key_"
 //   - Prefixes single underscore labels with "key"

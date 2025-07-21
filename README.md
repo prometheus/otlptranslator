@@ -6,12 +6,11 @@ Part of the [Prometheus](https://prometheus.io/) ecosystem, following the [OpenT
 
 ## Features
 
-- ✅ **Metric Name Translation**: Convert OTLP metric names to Prometheus-compliant format
-- ✅ **Label Name Normalization**: Transform OTLP attribute names to valid Prometheus labels  
-- ✅ **Unit Handling**: Translates OTLP units to Prometheus unit conventions
+- ✅ **Metric Name and Label Translation**: Convert OTLP metric names and attributes to Prometheus-compliant format
+- ✅ **Unit Handling**: Translate OTLP units to Prometheus unit conventions
 - ✅ **Type-Aware Suffixes**: Automatically append `_total`, `_ratio` based on metric type
 - ✅ **Namespace Support**: Add configurable namespace prefixes
-- ✅ **UTF-8 Support**: Choose between Prometheus-compliant names (`[a-zA-Z0-9:_]`) or UTF-8 allowed names
+- ✅ **UTF-8 Support**: Choose between Prometheus legacy scheme compliant metric/label names (`[a-zA-Z0-9:_]`) or untranslated metric/label names
 
 ## Installation
 
@@ -56,7 +55,7 @@ func main() {
 ### Metric Name Translation
 
 ```go
-namer := otlptranslator.MetricNamer{WithMetricSuffixes: true}
+namer := otlptranslator.MetricNamer{WithMetricSuffixes: true, UTF8Allowed: false}
 
 // Counter gets _total suffix
 counter := otlptranslator.Metric{
@@ -77,7 +76,7 @@ ratio := otlptranslator.Metric{
 fmt.Println(namer.Build(ratio)) // cpu_utilization_ratio
 ```
 
-### Label Normalization
+### Label Translation
 
 ```go
 labelNamer := otlptranslator.LabelNamer{UTF8Allowed: false}

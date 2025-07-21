@@ -122,15 +122,15 @@ type Metric struct {
 // Build builds a metric name for the specified metric.
 //
 // The method applies different transformations based on the MetricNamer configuration:
-//   - If UTF8Allowed is true, preserves UTF-8 characters
-//   - If UTF8Allowed is false, replaces invalid characters with underscores
-//   - If WithMetricSuffixes is true, adds appropriate suffixes based on type and unit
+//   - If UTF8Allowed is true, doesn't translate names - all characters must be valid UTF-8, however.
+//   - If UTF8Allowed is false, translates metric names to comply with legacy Prometheus name scheme.
+//   - If WithMetricSuffixes is true, adds appropriate suffixes based on type and unit.
 //
 // See rules at https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels
 //
 // Examples:
 //
-//	namer := MetricNamer{WithMetricSuffixes: true}
+//	namer := MetricNamer{WithMetricSuffixes: true, UTF8Allowed: false}
 //
 //	// Counter gets _total suffix
 //	counter := Metric{Name: "requests.count", Unit: "1", Type: MetricTypeMonotonicCounter}
