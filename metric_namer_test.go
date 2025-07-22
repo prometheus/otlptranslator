@@ -31,6 +31,7 @@ func TestMetricNamer_Build(t *testing.T) {
 		metric         Metric
 		wantMetricName string
 		wantUnitName   string
+		wantError      string
 	}{
 		// UTF8Allowed = false, WithMetricSuffixes = false tests
 		{
@@ -98,6 +99,7 @@ func TestMetricNamer_Build(t *testing.T) {
 				Type: MetricTypeGauge,
 			},
 			wantMetricName: "",
+			wantError:      "normalization for metric \"\" resulted in empty name",
 		},
 		{
 			name: "metric with multiple consecutive special chars",
@@ -123,7 +125,20 @@ func TestMetricNamer_Build(t *testing.T) {
 				Unit: "",
 				Type: MetricTypeGauge,
 			},
-			wantMetricName: "",
+			wantError: "normalization for metric \"@#$%\" resulted in empty name",
+		},
+		{
+			name: "metric name with only special characters",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: false,
+			},
+			metric: Metric{
+				Name: "@_#_$_%",
+				Unit: "",
+				Type: MetricTypeGauge,
+			},
+			wantError: "normalization for metric \"@_#_$_%\" resulted in invalid name \"_____\"",
 		},
 		{
 			name: "namespace with special characters",
@@ -415,6 +430,32 @@ func TestMetricNamer_Build(t *testing.T) {
 			wantMetricName: "app_123_requests_total",
 		},
 		{
+			name: "metric with only underscores (escaped)",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: false,
+			},
+			metric: Metric{
+				Name: "___",
+				Unit: "",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "___",
+		},
+		{
+			name: "metric with only underscores (utf8)",
+			namer: MetricNamer{
+				UTF8Allowed:        true,
+				WithMetricSuffixes: false,
+			},
+			metric: Metric{
+				Name: "___",
+				Unit: "",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "___",
+		},
+		{
 			name: "metric with multiple underscores normalized",
 			namer: MetricNamer{
 				UTF8Allowed:        false,
@@ -454,6 +495,7 @@ func TestMetricNamer_Build(t *testing.T) {
 				Type: MetricTypeGauge,
 			},
 			wantMetricName: "",
+			wantError:      "normalization for metric \"@#$%\" resulted in empty name",
 		},
 
 		// UTF8Allowed = true, WithMetricSuffixes = false tests
@@ -1166,7 +1208,16 @@ func TestMetricNamer_Build(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Build metric name using MetricNamer
-			gotMetricName := tt.namer.Build(tt.metric)
+			gotMetricName, err := tt.namer.Build(tt.metric)
+			if tt.wantError != "" {
+				if err == nil {
+					t.Errorf("MetricNamer.Build(%v), got nil err, want %q", tt.metric, tt.wantError)
+				} else if err.Error() != tt.wantError {
+					t.Errorf("MetricNamer.Build(%v), got err string = %q want %q", tt.metric, err, tt.wantError)
+				}
+			} else if err != nil {
+				t.Errorf("MetricNamer.Build(%v), got err string = %q want nil", tt.metric, err)
+			}
 			if gotMetricName != tt.wantMetricName {
 				t.Errorf("MetricNamer.Build(%v) = %q, want %q", tt.metric, gotMetricName, tt.wantMetricName)
 			}

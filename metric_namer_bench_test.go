@@ -18,6 +18,7 @@ func BenchmarkBuild(b *testing.B) {
 					for _, scenario := range scenarios {
 						b.Run(scenario.name, func(b *testing.B) {
 							for i := 0; i < b.N; i++ {
+								//nolint:errcheck
 								builder.Build(scenario.metric)
 							}
 						})
