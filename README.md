@@ -29,14 +29,14 @@ import (
 )
 
 func main() {
-    // Create a metric namer
+    // Create a metric namer using traditional Prometheus name translation, with suffixes added and UTF-8 disallowed.
     namer := otlptranslator.MetricNamer{
         Namespace:          "myapp",
         WithMetricSuffixes: true,
         UTF8Allowed:        false,
     }
 
-    // Convert OTLP metric to Prometheus format
+    // Translate OTLP metric to Prometheus format
     metric := otlptranslator.Metric{
         Name: "http.server.request.duration",
         Unit: "s",
@@ -44,7 +44,7 @@ func main() {
     }
     fmt.Println(namer.Build(metric)) // Output: myapp_http_server_request_duration_seconds
 
-    // Normalize label names
+    // Translate label names
     labelNamer := otlptranslator.LabelNamer{UTF8Allowed: false}
     fmt.Println(labelNamer.Build("http.method")) // Output: http_method
 }
@@ -102,11 +102,11 @@ unitNamer.Build("1")           // "" (dimensionless)
 ### Configuration Options
 
 ```go
-// Prometheus-compliant mode (default) - supports [a-zA-Z0-9:_]
-compliantNamer := otlptranslator.MetricNamer{UTF8Allowed: false}
+// Prometheus-compliant mode - supports [a-zA-Z0-9:_]
+compliantNamer := otlptranslator.MetricNamer{UTF8Allowed: false, WithMetricSuffixes: true}
 
-// UTF-8 allowed mode
-utf8Namer := otlptranslator.MetricNamer{UTF8Allowed: true}
+// Transparent pass-through mode, aka "NoTranslation"
+utf8Namer := otlptranslator.MetricNamer{UTF8Allowed: true, WithMetricSuffixes: false}
 
 // With namespace and suffixes
 productionNamer := otlptranslator.MetricNamer{

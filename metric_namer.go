@@ -123,7 +123,7 @@ type Metric struct {
 //
 // The method applies different transformations based on the MetricNamer configuration:
 //   - If UTF8Allowed is true, doesn't translate names - all characters must be valid UTF-8, however.
-//   - If UTF8Allowed is false, translates metric names to comply with legacy Prometheus name scheme.
+//   - If UTF8Allowed is false, translates metric names to comply with legacy Prometheus name scheme by escaping invalid characters to `_`.
 //   - If WithMetricSuffixes is true, adds appropriate suffixes based on type and unit.
 //
 // See rules at https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels
