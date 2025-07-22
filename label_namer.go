@@ -25,19 +25,30 @@ import (
 )
 
 // LabelNamer is a helper struct to build label names.
+// It translates OpenTelemetry Protocol (OTLP) attribute names to Prometheus-compliant label names.
+//
+// Example usage:
+//
+//	namer := LabelNamer{UTF8Allowed: false}
+//	result := namer.Build("http.method") // "http_method"
 type LabelNamer struct {
 	UTF8Allowed bool
 }
 
 // Build normalizes the specified label to follow Prometheus label names standard.
 //
-// See rules at https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels.
+// Translation rules:
+//   - Replaces invalid characters with underscores
+//   - Prefixes labels with invalid start characters (numbers or `_`) with "key"
+//   - Preserves double underscore labels (reserved names)
+//   - If UTF8Allowed is true, returns label as-is
 //
-// Labels that start with non-letter rune will be prefixed with "key_".
-// An exception is made for double-underscores which are allowed.
+// Examples:
 //
-// If UTF8Allowed is true, the label is returned as is. This option is provided just to
-// keep a consistent interface with the MetricNamer.
+//	namer := LabelNamer{UTF8Allowed: false}
+//	namer.Build("http.method")     // "http_method"
+//	namer.Build("123invalid")      // "key_123invalid"
+//	namer.Build("__reserved__")    // "__reserved__" (preserved)
 func (ln *LabelNamer) Build(label string) string {
 	// Trivial case.
 	if len(label) == 0 || ln.UTF8Allowed {
