@@ -31,6 +31,7 @@ func TestMetricNamer_Build(t *testing.T) {
 		metric         Metric
 		wantMetricName string
 		wantUnitName   string
+		wantError      string
 	}{
 		// UTF8Allowed = false, WithMetricSuffixes = false tests
 		{
@@ -98,6 +99,7 @@ func TestMetricNamer_Build(t *testing.T) {
 				Type: MetricTypeGauge,
 			},
 			wantMetricName: "",
+			wantError:      "metric normalization resulted in invalid name",
 		},
 		{
 			name: "metric with multiple consecutive special chars",
@@ -123,7 +125,20 @@ func TestMetricNamer_Build(t *testing.T) {
 				Unit: "",
 				Type: MetricTypeGauge,
 			},
-			wantMetricName: "",
+			wantError: "metric normalization resulted in invalid name",
+		},
+		{
+			name: "metric name with only special characters",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: false,
+			},
+			metric: Metric{
+				Name: "@_#_$_%",
+				Unit: "",
+				Type: MetricTypeGauge,
+			},
+			wantError: "metric normalization resulted in invalid name",
 		},
 		{
 			name: "namespace with special characters",
@@ -386,6 +401,7 @@ func TestMetricNamer_Build(t *testing.T) {
 				Type: MetricTypeGauge,
 			},
 			wantMetricName: "",
+			wantError:      "metric normalization resulted in invalid name",
 		},
 
 		// UTF8Allowed = true, WithMetricSuffixes = false tests
@@ -1098,7 +1114,16 @@ func TestMetricNamer_Build(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Build metric name using MetricNamer
-			gotMetricName := tt.namer.Build(tt.metric)
+			gotMetricName, err := tt.namer.Build(tt.metric)
+			if tt.wantError != "" {
+				if err == nil {
+					t.Errorf("MetricNamer.Build(%v), got nil err, want %q", tt.metric, tt.wantError)
+				} else if err.Error() != tt.wantError {
+					t.Errorf("MetricNamer.Build(%v), got err string = %q want %q", tt.metric, err, tt.wantError)
+				}
+			} else if err != nil {
+				t.Errorf("MetricNamer.Build(%v), got err string = %q want nil", tt.metric, err)
+			}
 			if gotMetricName != tt.wantMetricName {
 				t.Errorf("MetricNamer.Build(%v) = %q, want %q", tt.metric, gotMetricName, tt.wantMetricName)
 			}

@@ -49,6 +49,7 @@ func BenchmarkNormalizeLabel(b *testing.B) {
 	for _, input := range labelBenchmarkInputs {
 		b.Run(input.name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
+				//nolint:errcheck
 				labelNamer.Build(input.label)
 			}
 		})

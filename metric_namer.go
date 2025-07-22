@@ -20,6 +20,7 @@
 package otlptranslator
 
 import (
+	"errors"
 	"slices"
 	"strings"
 	"unicode"
@@ -139,17 +140,29 @@ type Metric struct {
 //	// Gauge with unit suffix
 //	gauge := Metric{Name: "memory.usage", Unit: "By", Type: MetricTypeGauge}
 //	result = namer.Build(gauge) // "memory_usage_bytes"
-func (mn *MetricNamer) Build(metric Metric) string {
+func (mn *MetricNamer) Build(metric Metric) (string, error) {
 	if mn.UTF8Allowed {
 		return mn.buildMetricName(metric.Name, metric.Unit, metric.Type)
 	}
 	return mn.buildCompliantMetricName(metric.Name, metric.Unit, metric.Type)
 }
 
-func (mn *MetricNamer) buildCompliantMetricName(name, unit string, metricType MetricType) string {
+func (mn *MetricNamer) buildCompliantMetricName(name, unit string, metricType MetricType) (normalizedName string, err error) {
+	defer func() {
+		// Check that the resulting normalized name contains at least one non-underscore character
+		for _, c := range normalizedName {
+			if c != '_' {
+				return
+			}
+		}
+		normalizedName = ""
+		err = errors.New("metric normalization resulted in invalid name")
+	}()
+
 	// Full normalization following standard Prometheus naming conventions
 	if mn.WithMetricSuffixes {
-		return normalizeName(name, unit, metricType, mn.Namespace)
+		normalizedName = normalizeName(name, unit, metricType, mn.Namespace)
+		return
 	}
 
 	// Simple case (no full normalization, no units, etc.).
@@ -162,7 +175,8 @@ func (mn *MetricNamer) buildCompliantMetricName(name, unit string, metricType Me
 		namespace := strings.Join(strings.FieldsFunc(mn.Namespace, func(r rune) bool {
 			return invalidMetricCharRE.MatchString(string(r))
 		}), "_")
-		return namespace + "_" + metricName
+		normalizedName = namespace + "_" + metricName
+		return
 	}
 
 	// Metric name starts with a digit? Prefix it with an underscore.
@@ -170,7 +184,8 @@ func (mn *MetricNamer) buildCompliantMetricName(name, unit string, metricType Me
 		metricName = "_" + metricName
 	}
 
-	return metricName
+	normalizedName = metricName
+	return
 }
 
 var (
@@ -282,7 +297,7 @@ func removeItem(slice []string, value string) []string {
 	return newSlice
 }
 
-func (mn *MetricNamer) buildMetricName(name, unit string, metricType MetricType) string {
+func (mn *MetricNamer) buildMetricName(name, unit string, metricType MetricType) (string, error) {
 	if mn.Namespace != "" {
 		name = mn.Namespace + "_" + name
 	}
@@ -310,5 +325,5 @@ func (mn *MetricNamer) buildMetricName(name, unit string, metricType MetricType)
 			name += "_ratio"
 		}
 	}
-	return name
+	return name, nil
 }

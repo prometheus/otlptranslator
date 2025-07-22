@@ -20,6 +20,7 @@
 package otlptranslator
 
 import (
+	"errors"
 	"strings"
 	"unicode"
 )
@@ -49,10 +50,27 @@ type LabelNamer struct {
 //	namer.Build("http.method")     // "http_method"
 //	namer.Build("123invalid")      // "key_123invalid"
 //	namer.Build("__reserved__")    // "__reserved__" (preserved)
-func (ln *LabelNamer) Build(label string) string {
+func (ln *LabelNamer) Build(label string) (normalizedName string, err error) {
+	defer func() {
+		if ln.AllowUTF8 {
+			return
+		}
+
+		// Check that the resulting normalized name contains at least one non-underscore character
+
+		for _, c := range normalizedName {
+			if c != '_' {
+				return
+			}
+		}
+		normalizedName = ""
+		err = errors.New("label name normalization resulted in invalid name")
+	}()
+
 	// Trivial case.
 	if len(label) == 0 || ln.UTF8Allowed {
-		return label
+		normalizedName = label
+		return
 	}
 
 	label = sanitizeLabelName(label)
@@ -64,5 +82,6 @@ func (ln *LabelNamer) Build(label string) string {
 		label = "key" + label
 	}
 
-	return label
+	normalizedName = label
+	return
 }
