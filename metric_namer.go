@@ -301,7 +301,7 @@ func (mn *MetricNamer) buildMetricName(inputName, unit string, metricType Metric
 			}()
 		}
 
-		// Append _total for Counters
+		// Append _total for Counters.
 		if metricType == MetricTypeMonotonicCounter {
 			name = trimSuffixAndDelimiter(name, "total")
 			defer func() {
@@ -316,8 +316,9 @@ func (mn *MetricNamer) buildMetricName(inputName, unit string, metricType Metric
 				name = name + "_" + perUnitSuffix
 			}()
 		}
-		if mainUnitSuffix != "" {
-			name = trimSuffixAndDelimiter(name, mainUnitSuffix)
+		// We don't need to trim and re-append the suffix here because this is
+		// the inner-most suffix.
+		if mainUnitSuffix != "" && !strings.HasSuffix(name, mainUnitSuffix) {
 			name = name + "_" + mainUnitSuffix
 		}
 	}

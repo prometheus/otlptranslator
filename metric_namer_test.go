@@ -358,6 +358,20 @@ func TestMetricNamer_Build(t *testing.T) {
 			wantUnitName:   "seconds",
 		},
 		{
+			name: "metric name already contains type and unit suffix with UTF8Allowed",
+			namer: MetricNamer{
+				UTF8Allowed:        true,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "cpu_seconds_total",
+				Unit: "s",
+				Type: MetricTypeMonotonicCounter,
+			},
+			wantMetricName: "cpu_seconds_total",
+			wantUnitName:   "seconds",
+		},
+		{
 			name: "metric with namespace and suffixes",
 			namer: MetricNamer{
 				Namespace:          "app",
