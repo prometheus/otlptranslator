@@ -282,33 +282,53 @@ func removeItem(slice []string, value string) []string {
 	return newSlice
 }
 
-func (mn *MetricNamer) buildMetricName(name, unit string, metricType MetricType) string {
+func (mn *MetricNamer) buildMetricName(inputName, unit string, metricType MetricType) (name string) {
+	name = inputName
 	if mn.Namespace != "" {
 		name = mn.Namespace + "_" + name
 	}
 
 	if mn.WithMetricSuffixes {
-		mainUnitSuffix, perUnitSuffix := buildUnitSuffixes(unit)
-		if mainUnitSuffix != "" {
-			name = name + "_" + mainUnitSuffix
-		}
-		if perUnitSuffix != "" {
-			name = name + "_" + perUnitSuffix
-		}
-
-		// Append _total for Counters
-		if metricType == MetricTypeMonotonicCounter {
-			name += "_total"
-		}
-
 		// Append _ratio for metrics with unit "1"
 		// Some OTel receivers improperly use unit "1" for counters of objects
 		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aissue+some+metric+units+don%27t+follow+otel+semantic+conventions
 		// Until these issues have been fixed, we're appending `_ratio` for gauges ONLY
 		// Theoretically, counters could be ratios as well, but it's absurd (for mathematical reasons)
 		if unit == "1" && metricType == MetricTypeGauge {
-			name += "_ratio"
+			name = trimSuffixAndDelimiter(name, "ratio")
+			defer func() {
+				name += "_ratio"
+			}()
 		}
+
+		// Append _total for Counters
+		if metricType == MetricTypeMonotonicCounter {
+			name = trimSuffixAndDelimiter(name, "total")
+			defer func() {
+				name += "_total"
+			}()
+		}
+
+		mainUnitSuffix, perUnitSuffix := buildUnitSuffixes(unit)
+		if perUnitSuffix != "" {
+			name = trimSuffixAndDelimiter(name, perUnitSuffix)
+			defer func() {
+				name = name + "_" + perUnitSuffix
+			}()
+		}
+		if mainUnitSuffix != "" {
+			name = trimSuffixAndDelimiter(name, mainUnitSuffix)
+			name = name + "_" + mainUnitSuffix
+		}
+	}
+	return name
+}
+
+// trimSuffixAndDelimiter trims a suffix, plus one extra character which is
+// assumed to be a delimiter.
+func trimSuffixAndDelimiter(name, suffix string) string {
+	if strings.HasSuffix(name, suffix) && len(name) > len(suffix)+1 {
+		return name[:len(name)-(len(suffix)+1)]
 	}
 	return name
 }

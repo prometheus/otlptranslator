@@ -318,6 +318,46 @@ func TestMetricNamer_Build(t *testing.T) {
 			wantUnitName:   "seconds",
 		},
 		{
+			name: "metric name already contains total suffix with UTF8Allowed",
+			namer: MetricNamer{
+				UTF8Allowed:        true,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "requests_total",
+				Unit: "",
+				Type: MetricTypeMonotonicCounter,
+			},
+			wantMetricName: "requests_total",
+		},
+		{
+			name: "metric name already contains ratio suffix with UTF8Allowed",
+			namer: MetricNamer{
+				UTF8Allowed:        true,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "cpu_usage_ratio",
+				Unit: "1",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "cpu_usage_ratio",
+		},
+		{
+			name: "metric name already contains unit suffix with UTF8Allowed",
+			namer: MetricNamer{
+				UTF8Allowed:        true,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "response_time_seconds",
+				Unit: "s",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "response_time_seconds",
+			wantUnitName:   "seconds",
+		},
+		{
 			name: "metric with namespace and suffixes",
 			namer: MetricNamer{
 				Namespace:          "app",
