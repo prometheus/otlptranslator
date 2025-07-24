@@ -99,7 +99,7 @@ func TestMetricNamer_Build(t *testing.T) {
 				Type: MetricTypeGauge,
 			},
 			wantMetricName: "",
-			wantError:      "metric normalization resulted in invalid name",
+			wantError:      "metric normalization resulted in empty name",
 		},
 		{
 			name: "metric with multiple consecutive special chars",
@@ -125,7 +125,7 @@ func TestMetricNamer_Build(t *testing.T) {
 				Unit: "",
 				Type: MetricTypeGauge,
 			},
-			wantError: "metric normalization resulted in invalid name",
+			wantError: "metric normalization resulted in empty name",
 		},
 		{
 			name: "metric name with only special characters",
@@ -362,6 +362,32 @@ func TestMetricNamer_Build(t *testing.T) {
 			wantMetricName: "app_123_requests_total",
 		},
 		{
+			name: "metric with only underscores (escaped)",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: false,
+			},
+			metric: Metric{
+				Name: "___",
+				Unit: "",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "___",
+		},
+		{
+			name: "metric with only underscores (utf8)",
+			namer: MetricNamer{
+				UTF8Allowed:        true,
+				WithMetricSuffixes: false,
+			},
+			metric: Metric{
+				Name: "___",
+				Unit: "",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "___",
+		},
+		{
 			name: "metric with multiple underscores normalized",
 			namer: MetricNamer{
 				UTF8Allowed:        false,
@@ -401,7 +427,7 @@ func TestMetricNamer_Build(t *testing.T) {
 				Type: MetricTypeGauge,
 			},
 			wantMetricName: "",
-			wantError:      "metric normalization resulted in invalid name",
+			wantError:      "metric normalization resulted in empty name",
 		},
 
 		// UTF8Allowed = true, WithMetricSuffixes = false tests

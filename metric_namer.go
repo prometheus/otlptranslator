@@ -149,6 +149,15 @@ func (mn *MetricNamer) Build(metric Metric) (string, error) {
 
 func (mn *MetricNamer) buildCompliantMetricName(name, unit string, metricType MetricType) (normalizedName string, err error) {
 	defer func() {
+		if len(normalizedName) == 0 {
+			err = errors.New("metric normalization resulted in empty name")
+			return
+		}
+
+		if normalizedName == name {
+			return
+		}
+
 		// Check that the resulting normalized name contains at least one non-underscore character
 		for _, c := range normalizedName {
 			if c != '_' {

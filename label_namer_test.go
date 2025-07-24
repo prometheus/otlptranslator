@@ -27,6 +27,7 @@ var labelTestCases = []struct {
 	wantUTF8err   bool
 }{
 	{label: "", sanitized: "", wantEscapeErr: true, wantUTF8err: true},
+	{label: "__", sanitized: "__", wantEscapeErr: false, wantUTF8err: false},
 	{label: "label:with:colons", sanitized: "label_with_colons"},
 	{label: "LabelWithCapitalLetters", sanitized: "LabelWithCapitalLetters"},
 	{label: "label!with&special$chars)", sanitized: "label_with_special_chars_"},
