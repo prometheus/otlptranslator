@@ -372,6 +372,20 @@ func TestMetricNamer_Build(t *testing.T) {
 			wantUnitName:   "seconds",
 		},
 		{
+			name: "reproduction case for opentelemetry-collector metrics",
+			namer: MetricNamer{
+				UTF8Allowed:        true,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "otelcol_process_cpu_seconds",
+				Unit: "s",
+				Type: MetricTypeMonotonicCounter,
+			},
+			wantMetricName: "otelcol_process_cpu_seconds_total",
+			wantUnitName:   "seconds",
+		},
+		{
 			name: "metric with namespace and suffixes",
 			namer: MetricNamer{
 				Namespace:          "app",
