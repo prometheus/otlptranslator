@@ -20,6 +20,7 @@
 package otlptranslator
 
 import (
+	"errors"
 	"strings"
 	"unicode"
 )
@@ -49,20 +50,41 @@ type LabelNamer struct {
 //	namer.Build("http.method")     // "http_method"
 //	namer.Build("123invalid")      // "key_123invalid"
 //	namer.Build("__reserved__")    // "__reserved__" (preserved)
-func (ln *LabelNamer) Build(label string) string {
+func (ln *LabelNamer) Build(label string) (normalizedName string, err error) {
+	defer func() {
+		if len(normalizedName) == 0 {
+			err = errors.New("label name normalization resulted in empty name")
+			return
+		}
+
+		if ln.UTF8Allowed || normalizedName == label {
+			return
+		}
+
+		// Check that the resulting normalized name contains at least one non-underscore character
+		for _, c := range normalizedName {
+			if c != '_' {
+				return
+			}
+		}
+		normalizedName = ""
+		err = errors.New("label name normalization resulted in invalid name")
+	}()
+
 	// Trivial case.
 	if len(label) == 0 || ln.UTF8Allowed {
-		return label
+		normalizedName = label
+		return
 	}
 
-	label = sanitizeLabelName(label)
+	normalizedName = sanitizeLabelName(label)
 
 	// If label starts with a number, prepend with "key_".
-	if unicode.IsDigit(rune(label[0])) {
-		label = "key_" + label
-	} else if strings.HasPrefix(label, "_") && !strings.HasPrefix(label, "__") {
-		label = "key" + label
+	if unicode.IsDigit(rune(normalizedName[0])) {
+		normalizedName = "key_" + normalizedName
+	} else if strings.HasPrefix(normalizedName, "_") && !strings.HasPrefix(normalizedName, "__") {
+		normalizedName = "key" + normalizedName
 	}
 
-	return label
+	return
 }
