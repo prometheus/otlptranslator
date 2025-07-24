@@ -52,7 +52,7 @@ type LabelNamer struct {
 //	namer.Build("__reserved__")    // "__reserved__" (preserved)
 func (ln *LabelNamer) Build(label string) (normalizedName string, err error) {
 	defer func() {
-		if ln.UTF8Allowed {
+		if ln.UTF8Allowed && len(normalizedName) > 0 {
 			return
 		}
 
