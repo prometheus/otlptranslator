@@ -48,11 +48,8 @@ func TestMetricNamer_Build(t *testing.T) {
 			wantMetricName: "simple_metric",
 		},
 		{
-			name: "metric with special characters replaced",
-			namer: MetricNamer{
-				UTF8Allowed:        false,
-				WithMetricSuffixes: false,
-			},
+			name:  "metric with special characters replaced",
+			namer: *NewMetricNamer("", UnderscoreEscapingWithoutSuffixes),
 			metric: Metric{
 				Name: "metric@with#special$chars",
 				Unit: "",
@@ -141,12 +138,8 @@ func TestMetricNamer_Build(t *testing.T) {
 			wantError: "normalization for metric \"@_#_$_%\" resulted in invalid name \"_____\"",
 		},
 		{
-			name: "namespace with special characters",
-			namer: MetricNamer{
-				Namespace:          "test@namespace!!??",
-				UTF8Allowed:        false,
-				WithMetricSuffixes: false,
-			},
+			name:  "namespace with special characters",
+			namer: *NewMetricNamer("test@namespace!!??", UnderscoreEscapingWithoutSuffixes),
 			metric: Metric{
 				Name: "metric",
 				Unit: "",
@@ -224,11 +217,8 @@ func TestMetricNamer_Build(t *testing.T) {
 			wantUnitName:   "bytes",
 		},
 		{
-			name: "metric with per unit",
-			namer: MetricNamer{
-				UTF8Allowed:        false,
-				WithMetricSuffixes: true,
-			},
+			name:  "metric with per unit",
+			namer: *NewMetricNamer("", UnderscoreEscapingWithSuffixes),
 			metric: Metric{
 				Name: "requests",
 				Unit: "1/s",
@@ -513,12 +503,8 @@ func TestMetricNamer_Build(t *testing.T) {
 			wantMetricName: "métric_with_ñ_chars",
 		},
 		{
-			name: "utf8 metric with namespace without suffixes",
-			namer: MetricNamer{
-				Namespace:          "test_namespace",
-				UTF8Allowed:        true,
-				WithMetricSuffixes: false,
-			},
+			name:  "utf8 metric with namespace without suffixes",
+			namer: *NewMetricNamer("test_namespace", NoTranslation),
 			metric: Metric{
 				Name: "métric_with_ñ_chars",
 				Unit: "",
@@ -583,12 +569,8 @@ func TestMetricNamer_Build(t *testing.T) {
 			wantUnitName:   "per_second",
 		},
 		{
-			name: "utf8 metric with namespace and suffixes",
-			namer: MetricNamer{
-				Namespace:          "ñamespace",
-				UTF8Allowed:        true,
-				WithMetricSuffixes: true,
-			},
+			name:  "utf8 metric with namespace and suffixes",
+			namer: *NewMetricNamer("ñamespace", NoUTF8EscapingWithSuffixes),
 			metric: Metric{
 				Name: "requêsts",
 				Unit: "1/s",
