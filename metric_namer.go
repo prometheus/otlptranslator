@@ -104,6 +104,16 @@ type MetricNamer struct {
 	UTF8Allowed        bool
 }
 
+// NewMetricNamer creates a MetricNamer with the specified namespace (can be
+// blank) and the requested Translation Strategy.
+func NewMetricNamer(namespace string, strategy TranslationStrategyOption) MetricNamer {
+	return MetricNamer{
+		Namespace:          namespace,
+		WithMetricSuffixes: strategy.ShouldAddSuffixes(),
+		UTF8Allowed:        !strategy.ShouldEscape(),
+	}
+}
+
 // Metric is a helper struct that holds information about a metric.
 // It represents an OpenTelemetry metric with its name, unit, and type.
 //
