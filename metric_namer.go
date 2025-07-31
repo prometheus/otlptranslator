@@ -104,11 +104,11 @@ type MetricNamer struct {
 	UTF8Allowed        bool
 }
 
-func NewMetricNamer(namespace string, strat TranslationStrategyOption) MetricNamer {
+func NewMetricNamer(namespace string, strategy TranslationStrategyOption) MetricNamer {
 	return MetricNamer{
 		Namespace:          namespace,
-		WithMetricSuffixes: strat.ShouldAddSuffixes(),
-		UTF8Allowed:        !strat.ShouldEscape(),
+		WithMetricSuffixes: strategy.ShouldAddSuffixes(),
+		UTF8Allowed:        !strategy.ShouldEscape(),
 	}
 }
 

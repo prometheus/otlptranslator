@@ -16,6 +16,10 @@
 
 package otlptranslator
 
+// TranslationStrategyOption is a constant that defines how metric and label
+// names should be handled during translation. The recommended approach is to
+// use either UnderscoreEscapingWithSuffixes for full Prometheus-style
+// compatibility, or NoTranslation for Otel-style names.
 type TranslationStrategyOption string
 
 var (
