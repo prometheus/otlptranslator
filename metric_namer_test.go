@@ -49,7 +49,7 @@ func TestMetricNamer_Build(t *testing.T) {
 		},
 		{
 			name:  "metric with special characters replaced",
-			namer: *NewMetricNamer("", UnderscoreEscapingWithoutSuffixes),
+			namer: NewMetricNamer("", UnderscoreEscapingWithoutSuffixes),
 			metric: Metric{
 				Name: "metric@with#special$chars",
 				Unit: "",
@@ -139,7 +139,7 @@ func TestMetricNamer_Build(t *testing.T) {
 		},
 		{
 			name:  "namespace with special characters",
-			namer: *NewMetricNamer("test@namespace!!??", UnderscoreEscapingWithoutSuffixes),
+			namer: NewMetricNamer("test@namespace!!??", UnderscoreEscapingWithoutSuffixes),
 			metric: Metric{
 				Name: "metric",
 				Unit: "",
@@ -218,7 +218,7 @@ func TestMetricNamer_Build(t *testing.T) {
 		},
 		{
 			name:  "metric with per unit",
-			namer: *NewMetricNamer("", UnderscoreEscapingWithSuffixes),
+			namer: NewMetricNamer("", UnderscoreEscapingWithSuffixes),
 			metric: Metric{
 				Name: "requests",
 				Unit: "1/s",
@@ -504,7 +504,7 @@ func TestMetricNamer_Build(t *testing.T) {
 		},
 		{
 			name:  "utf8 metric with namespace without suffixes",
-			namer: *NewMetricNamer("test_namespace", NoTranslation),
+			namer: NewMetricNamer("test_namespace", NoTranslation),
 			metric: Metric{
 				Name: "métric_with_ñ_chars",
 				Unit: "",
@@ -570,7 +570,7 @@ func TestMetricNamer_Build(t *testing.T) {
 		},
 		{
 			name:  "utf8 metric with namespace and suffixes",
-			namer: *NewMetricNamer("ñamespace", NoUTF8EscapingWithSuffixes),
+			namer: NewMetricNamer("ñamespace", NoUTF8EscapingWithSuffixes),
 			metric: Metric{
 				Name: "requêsts",
 				Unit: "1/s",
