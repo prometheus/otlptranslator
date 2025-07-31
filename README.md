@@ -11,6 +11,7 @@ Part of the [Prometheus](https://prometheus.io/) ecosystem, following the [OpenT
 - **Type-Aware Suffixes**: Optionally append `_total`, `_ratio` based on metric type
 - **Namespace Support**: Add configurable namespace prefixes
 - **UTF-8 Support**: Choose between Prometheus legacy scheme compliant metric/label names (`[a-zA-Z0-9:_]`) or untranslated metric/label names
+- **Translation Strategy Configuration**: Select a translation strategy with a standard set of strings.
 
 ## Installation
 
@@ -30,11 +31,8 @@ import (
 
 func main() {
     // Create a metric namer using traditional Prometheus name translation, with suffixes added and UTF-8 disallowed.
-    namer := otlptranslator.MetricNamer{
-        Namespace:          "myapp",
-        WithMetricSuffixes: true,
-        UTF8Allowed:        false,
-    }
+    strategy := otlptranslator.UnderscoreEscapingWithSuffixes
+    namer := otlptranslator.NewMetricNamer("myapp", strategy)
 
     // Translate OTLP metric to Prometheus format
     metric := otlptranslator.Metric{
@@ -82,7 +80,7 @@ fmt.Println(namer.Build(ratio)) // cpu_utilization_ratio
 labelNamer := otlptranslator.LabelNamer{UTF8Allowed: false}
 
 labelNamer.Build("http.method")           // http_method
-labelNamer.Build("123invalid")            // key_123invalid  
+labelNamer.Build("123invalid")            // key_123invalid
 labelNamer.Build("_private")              // key_private
 labelNamer.Build("__reserved__")          // __reserved__ (preserved)
 labelNamer.Build("label@with$symbols")    // label_with_symbols
@@ -107,6 +105,7 @@ compliantNamer := otlptranslator.MetricNamer{UTF8Allowed: false, WithMetricSuffi
 
 // Transparent pass-through mode, aka "NoTranslation"
 utf8Namer := otlptranslator.MetricNamer{UTF8Allowed: true, WithMetricSuffixes: false}
+utf8Namer = otlptranslator.NewMetricNamer("", otlpTranslator.NoTranslation)
 
 // With namespace and suffixes
 productionNamer := otlptranslator.MetricNamer{
