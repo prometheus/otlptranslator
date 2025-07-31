@@ -207,9 +207,7 @@ func (mn *MetricNamer) buildCompliantMetricName(name, unit string, metricType Me
 	return
 }
 
-var (
-	multipleUnderscoresRE = regexp.MustCompile(`__+`)
-)
+var multipleUnderscoresRE = regexp.MustCompile(`__+`)
 
 // isValidCompliantMetricChar checks if a rune is a valid metric name character (a-z, A-Z, 0-9, :).
 func isValidCompliantMetricChar(r rune) bool {
