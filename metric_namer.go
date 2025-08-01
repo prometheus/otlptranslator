@@ -186,13 +186,13 @@ func (mn *MetricNamer) buildCompliantMetricName(name, unit string, metricType Me
 
 	// Simple case (no full normalization, no units, etc.).
 	metricName := strings.Join(strings.FieldsFunc(name, func(r rune) bool {
-		return invalidMetricCharRE.MatchString(string(r))
+		return !isValidCompliantMetricChar(r) && r != '_'
 	}), "_")
 
 	// Namespace?
 	if mn.Namespace != "" {
 		namespace := strings.Join(strings.FieldsFunc(mn.Namespace, func(r rune) bool {
-			return invalidMetricCharRE.MatchString(string(r))
+			return !isValidCompliantMetricChar(r) && r != '_'
 		}), "_")
 		normalizedName = namespace + "_" + metricName
 		return
@@ -207,11 +207,7 @@ func (mn *MetricNamer) buildCompliantMetricName(name, unit string, metricType Me
 	return
 }
 
-var (
-	// Regexp for metric name characters that should be replaced with _.
-	invalidMetricCharRE   = regexp.MustCompile(`[^a-zA-Z0-9:_]`)
-	multipleUnderscoresRE = regexp.MustCompile(`__+`)
-)
+var multipleUnderscoresRE = regexp.MustCompile(`__+`)
 
 // isValidCompliantMetricChar checks if a rune is a valid metric name character (a-z, A-Z, 0-9, :).
 func isValidCompliantMetricChar(r rune) bool {
