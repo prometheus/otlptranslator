@@ -102,6 +102,13 @@ type MetricNamer struct {
 	Namespace          string
 	WithMetricSuffixes bool
 	UTF8Allowed        bool
+	// PreserveMultipleUnderscores when true, preserves multiple consecutive underscores
+	// in metric names and units when UTF8Allowed is false. This option is discouraged
+	// as it violates the OpenTelemetry to Prometheus specification
+	// (https://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus)
+	// but may be needed for compatibility with legacy systems that allow multiple underscores.
+	// This option is ignored when UTF8Allowed is true.
+	PreserveMultipleUnderscores bool
 }
 
 // NewMetricNamer creates a MetricNamer with the specified namespace (can be
@@ -180,20 +187,16 @@ func (mn *MetricNamer) buildCompliantMetricName(name, unit string, metricType Me
 
 	// Full normalization following standard Prometheus naming conventions
 	if mn.WithMetricSuffixes {
-		normalizedName = normalizeName(name, unit, metricType, mn.Namespace)
+		normalizedName = normalizeName(name, unit, metricType, mn.Namespace, mn.PreserveMultipleUnderscores)
 		return
 	}
 
 	// Simple case (no full normalization, no units, etc.).
-	metricName := strings.Join(strings.FieldsFunc(name, func(r rune) bool {
-		return !isValidCompliantMetricChar(r) && r != '_'
-	}), "_")
+	metricName := sanitizeMetricName(name, mn.PreserveMultipleUnderscores)
 
 	// Namespace?
 	if mn.Namespace != "" {
-		namespace := strings.Join(strings.FieldsFunc(mn.Namespace, func(r rune) bool {
-			return !isValidCompliantMetricChar(r) && r != '_'
-		}), "_")
+		namespace := sanitizeMetricName(mn.Namespace, mn.PreserveMultipleUnderscores)
 		normalizedName = namespace + "_" + metricName
 		return
 	}
@@ -211,10 +214,7 @@ var multipleUnderscoresRE = regexp.MustCompile(`__+`)
 
 // isValidCompliantMetricChar checks if a rune is a valid metric name character (a-z, A-Z, 0-9, :).
 func isValidCompliantMetricChar(r rune) bool {
-	return (r >= 'a' && r <= 'z') ||
-		(r >= 'A' && r <= 'Z') ||
-		(r >= '0' && r <= '9') ||
-		r == ':'
+	return isValidCompliantLabelChar(r) || r == ':'
 }
 
 // replaceInvalidMetricChar replaces invalid metric name characters with underscore.
@@ -225,18 +225,45 @@ func replaceInvalidMetricChar(r rune) rune {
 	return '_'
 }
 
-// Build a normalized name for the specified metric.
-func normalizeName(name, unit string, metricType MetricType, namespace string) string {
+// sanitizeMetricName cleans a metric name by replacing invalid characters with underscores.
+// If preserveMultipleUnderscores is true, multiple consecutive underscores are preserved.
+// If false, multiple consecutive underscores are collapsed to single underscores.
+func sanitizeMetricName(name string, preserveMultipleUnderscores bool) string {
+	if preserveMultipleUnderscores {
+		// Preserve multiple underscores by replacing invalid chars individually
+		return strings.Map(replaceInvalidMetricChar, name)
+	}
+	// Use FieldsFunc to collapse multiple underscores (existing behavior)
+	return strings.Join(strings.FieldsFunc(name, func(r rune) bool {
+		return !isValidCompliantMetricChar(r) && r != '_'
+	}), "_")
+}
+
+// splitMetricNameTokens splits a metric name into tokens, optionally preserving multiple underscores.
+func splitMetricNameTokens(name string, preserveMultipleUnderscores bool) []string {
+	if preserveMultipleUnderscores {
+		// When preserving underscores, the whole sanitized name is a single token.
+		// The suffix addition logic will handle adding suffixes to this single token.
+		sanitized := strings.Map(replaceInvalidMetricChar, name)
+		return []string{sanitized}
+	}
+
+	// Use FieldsFunc to split and collapse multiple underscores
+	return strings.FieldsFunc(name, func(r rune) bool {
+		return !isValidCompliantMetricChar(r)
+	})
+}
+
+// normalizeName builds a normalized name for the specified metric.
+func normalizeName(name, unit string, metricType MetricType, namespace string, preserveMultipleUnderscores bool) string {
 	// Split metric name into "tokens" (of supported metric name runes).
-	// Note that this has the side effect of replacing multiple consecutive underscores with a single underscore.
+	// When preserveMultipleUnderscores is true, multiple consecutive underscores are preserved.
+	// When false, this has the side effect of replacing multiple consecutive underscores with a single underscore.
 	// This is part of the OTel to Prometheus specification: https://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus.
-	nameTokens := strings.FieldsFunc(
-		name,
-		func(r rune) bool { return !isValidCompliantMetricChar(r) },
-	)
+	nameTokens := splitMetricNameTokens(name, preserveMultipleUnderscores)
 
 	mainUnitSuffix, perUnitSuffix := buildUnitSuffixes(unit)
-	nameTokens = addUnitTokens(nameTokens, cleanUpUnit(mainUnitSuffix), cleanUpUnit(perUnitSuffix))
+	nameTokens = addUnitTokens(nameTokens, cleanUpUnit(mainUnitSuffix, preserveMultipleUnderscores), cleanUpUnit(perUnitSuffix, preserveMultipleUnderscores))
 
 	// Append _total for Counters
 	if metricType == MetricTypeMonotonicCounter {
