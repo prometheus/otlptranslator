@@ -459,6 +459,155 @@ func TestMetricNamer_Build(t *testing.T) {
 			wantMetricName: "metric_with_multiple_underscores_unit_multiple_underscores",
 			wantUnitName:   "unit_multiple_underscores",
 		},
+
+		// PreserveMultipleUnderscores tests
+		{
+			name: "metric with multiple underscores preserved",
+			namer: MetricNamer{
+				UTF8Allowed:                 false,
+				WithMetricSuffixes:          true,
+				PreserveMultipleUnderscores: true,
+			},
+			metric: Metric{
+				Name: "metric__with__multiple__underscores",
+				Unit: "unit__multiple__underscores",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "metric__with__multiple__underscores_unit__multiple__underscores",
+			wantUnitName:   "unit__multiple__underscores",
+		},
+		{
+			name: "metric with mixed underscore patterns preserved",
+			namer: MetricNamer{
+				UTF8Allowed:                 false,
+				WithMetricSuffixes:          true,
+				PreserveMultipleUnderscores: true,
+			},
+			metric: Metric{
+				Name: "single_under__double___triple____quadruple",
+				Unit: "s",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "single_under__double___triple____quadruple_seconds",
+			wantUnitName:   "seconds",
+		},
+		{
+			name: "reserved metric name with multiple underscores preserved",
+			namer: MetricNamer{
+				UTF8Allowed:                 false,
+				WithMetricSuffixes:          true,
+				PreserveMultipleUnderscores: true,
+			},
+			metric: Metric{
+				Name: "__reserved__metric__name__",
+				Unit: "",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "__reserved__metric__name__",
+			wantUnitName:   "",
+		},
+		{
+			name: "metric with multiple underscores and special characters preserved",
+			namer: MetricNamer{
+				UTF8Allowed:                 false,
+				WithMetricSuffixes:          true,
+				PreserveMultipleUnderscores: true,
+			},
+			metric: Metric{
+				Name: "metric.name__with@&@special####chars",
+				Unit: "unit/special__&chars",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "metric_name__with___special____chars_unit_per_special___chars",
+			wantUnitName:   "unit_per_special___chars",
+		},
+		{
+			name: "metric with namespace containing multiple underscores preserved",
+			namer: MetricNamer{
+				Namespace:                   "app__namespace",
+				UTF8Allowed:                 false,
+				WithMetricSuffixes:          true,
+				PreserveMultipleUnderscores: true,
+			},
+			metric: Metric{
+				Name: "metric__name",
+				Unit: "s",
+				Type: MetricTypeMonotonicCounter,
+			},
+			wantMetricName: "app__namespace_metric__name_seconds_total",
+			wantUnitName:   "seconds",
+		},
+		{
+			name: "multiple underscores preserved without suffixes",
+			namer: MetricNamer{
+				UTF8Allowed:                 false,
+				WithMetricSuffixes:          false,
+				PreserveMultipleUnderscores: true,
+			},
+			metric: Metric{
+				Name: "simple__metric__name",
+				Unit: "",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "simple__metric__name",
+		},
+		{
+			name: "multiple underscores preserved with counter suffix",
+			namer: MetricNamer{
+				UTF8Allowed:                 false,
+				WithMetricSuffixes:          true,
+				PreserveMultipleUnderscores: true,
+			},
+			metric: Metric{
+				Name: "requests__per__service",
+				Unit: "",
+				Type: MetricTypeMonotonicCounter,
+			},
+			wantMetricName: "requests__per__service_total",
+		},
+		{
+			name: "multiple underscores preserved with ratio suffix",
+			namer: MetricNamer{
+				UTF8Allowed:                 false,
+				WithMetricSuffixes:          true,
+				PreserveMultipleUnderscores: true,
+			},
+			metric: Metric{
+				Name: "cpu__usage__ratio",
+				Unit: "1",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "cpu__usage__ratio_ratio",
+		},
+		{
+			name: "preserve multiple underscores ignored when UTF8Allowed is true",
+			namer: MetricNamer{
+				UTF8Allowed:                 true,
+				WithMetricSuffixes:          true,
+				PreserveMultipleUnderscores: false,
+			},
+			metric: Metric{
+				Name: "metric__with__multiple__underscores",
+				Unit: "unit__multiple__underscores",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "metric__with__multiple__underscores_unit__multiple__underscores",
+			wantUnitName:   "unit__multiple__underscores",
+		},
+		{
+			name: "leading and trailing multiple underscores preserved",
+			namer: MetricNamer{
+				UTF8Allowed:                 false,
+				WithMetricSuffixes:          false,
+				PreserveMultipleUnderscores: true,
+			},
+			metric: Metric{
+				Name: "__leading__and__trailing__",
+				Unit: "",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "__leading__and__trailing__",
+		},
 		{
 			name: "metric with special chars in unit",
 			namer: MetricNamer{
@@ -1207,7 +1356,8 @@ func TestMetricNamer_Build(t *testing.T) {
 			// Build unit name using UnitNamer to verify correlation when suffixes are enabled
 			if tt.namer.WithMetricSuffixes {
 				unitNamer := UnitNamer{
-					UTF8Allowed: tt.namer.UTF8Allowed,
+					UTF8Allowed:                 tt.namer.UTF8Allowed,
+					PreserveMultipleUnderscores: tt.namer.PreserveMultipleUnderscores,
 				}
 				gotUnitName := unitNamer.Build(tt.metric.Unit)
 				if gotUnitName != tt.wantUnitName {

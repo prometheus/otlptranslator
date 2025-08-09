@@ -79,8 +79,11 @@ func (ln *LabelNamer) Build(label string) (string, error) {
 	// If label starts with a number, prepend with "key_".
 	if unicode.IsDigit(rune(normalizedName[0])) {
 		normalizedName = "key_" + normalizedName
-	} else if ln.UnderscoreLabelSanitization && strings.HasPrefix(normalizedName, "_") && !strings.HasPrefix(normalizedName, "__") {
-		normalizedName = "key" + normalizedName
+	} else if ln.UnderscoreLabelSanitization && strings.HasPrefix(normalizedName, "_") {
+		isReserved, _ := isReservedLabel(normalizedName)
+		if !isReserved {
+			normalizedName = "key" + normalizedName
+		}
 	}
 
 	if hasUnderscoresOnly(normalizedName) {
@@ -97,4 +100,69 @@ func hasUnderscoresOnly(label string) bool {
 		}
 	}
 	return true
+}
+
+// sanitizeLabelName replaces any characters not valid according to the
+// classical Prometheus label naming scheme with an underscore.
+// When preserveMultipleUnderscores is true, multiple consecutive underscores are preserved.
+// When false, multiple consecutive underscores are collapsed to a single underscore.
+func sanitizeLabelName(name string, preserveMultipleUnderscores bool) string {
+	nameLength := len(name)
+
+	if preserveMultipleUnderscores {
+		// Simple case: just replace invalid characters, preserve multiple underscores
+		var b strings.Builder
+		b.Grow(nameLength)
+		for _, r := range name {
+			if isValidCompliantLabelChar(r) {
+				b.WriteRune(r)
+			} else {
+				b.WriteRune('_')
+			}
+		}
+		return b.String()
+	}
+
+	isReserved, labelName := isReservedLabel(name)
+	if isReserved {
+		name = labelName
+	}
+
+	// Collapse multiple underscores while replacing invalid characters.
+	var b strings.Builder
+	b.Grow(nameLength)
+	prevWasUnderscore := false
+
+	for _, r := range name {
+		if isValidCompliantLabelChar(r) {
+			b.WriteRune(r)
+			prevWasUnderscore = false
+		} else if !prevWasUnderscore {
+			// Invalid character - replace with underscore.
+			b.WriteRune('_')
+			prevWasUnderscore = true
+		}
+	}
+	if isReserved {
+		return "__" + b.String() + "__"
+	}
+	return b.String()
+}
+
+// isValidCompliantLabelChar checks if a rune is a valid label name character (a-z, A-Z, 0-9).
+func isValidCompliantLabelChar(r rune) bool {
+	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9')
+}
+
+// isReservedLabel checks if a label is a reserved label.
+// Reserved labels are labels that start and end with exactly __.
+// The returned label name is the label name without the __ prefix and suffix.
+func isReservedLabel(name string) (bool, string) {
+	if len(name) < 4 {
+		return false, ""
+	}
+	if !strings.HasPrefix(name, "__") || !strings.HasSuffix(name, "__") {
+		return false, ""
+	}
+	return true, name[2 : len(name)-2]
 }
