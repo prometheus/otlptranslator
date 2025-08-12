@@ -34,6 +34,13 @@ import (
 //	result := namer.Build("http.method") // "http_method"
 type LabelNamer struct {
 	UTF8Allowed bool
+	// PreserveMultipleUnderscores when true, preserves multiple consecutive underscores
+	// in label names when UTF8Allowed is false. This option is discouraged
+	// as it violates the OpenTelemetry to Prometheus specification
+	// (https://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus)
+	// but may be needed for compatibility with legacy systems that allow multiple underscores.
+	// This option is ignored when UTF8Allowed is true.
+	PreserveMultipleUnderscores bool
 }
 
 // Build normalizes the specified label to follow Prometheus label names standard.
@@ -77,14 +84,82 @@ func (ln *LabelNamer) Build(label string) (normalizedName string, err error) {
 		return
 	}
 
-	normalizedName = sanitizeLabelName(label)
+	// Reserved labels (starting with exactly __) should be preserved entirely
+	// This includes labels like __name__, __address__, etc.
+	if len(label) >= 2 && strings.HasPrefix(label, "__") && (len(label) == 2 || label[2] != '_') {
+		normalizedName = label
+		return
+	}
+
+	normalizedName = sanitizeLabelName(label, ln.PreserveMultipleUnderscores)
+
+	// Check if the sanitized name contains only underscores (invalid)
+	hasNonUnderscore := false
+	for _, c := range normalizedName {
+		if c != '_' {
+			hasNonUnderscore = true
+			break
+		}
+	}
+	if !hasNonUnderscore {
+		err = fmt.Errorf("normalization for label name %q resulted in invalid name %q", label, normalizedName)
+		normalizedName = ""
+		return
+	}
 
 	// If label starts with a number, prepend with "key_".
 	if unicode.IsDigit(rune(normalizedName[0])) {
 		normalizedName = "key_" + normalizedName
-	} else if strings.HasPrefix(normalizedName, "_") && !strings.HasPrefix(normalizedName, "__") {
+	} else if strings.HasPrefix(normalizedName, "_") {
+		// Add "key" prefix for labels starting with underscores (unless they are reserved)
+		// Reserved labels starting with exactly __ are already handled above
 		normalizedName = "key" + normalizedName
 	}
 
 	return
+}
+
+// sanitizeLabelName replaces any characters not valid according to the
+// classical Prometheus label naming scheme with an underscore.
+// When preserveMultipleUnderscores is true or by default, multiple consecutive underscores are preserved.
+// When false, multiple consecutive underscores are collapsed to single underscores (new behavior).
+func sanitizeLabelName(name string, preserveMultipleUnderscores bool) string {
+	if preserveMultipleUnderscores {
+		// Simple case: just replace invalid characters, preserve multiple underscores
+		var b strings.Builder
+		b.Grow(len(name))
+		for _, r := range name {
+			if isValidCompliantLabelChar(r) {
+				b.WriteRune(r)
+			} else {
+				b.WriteRune('_')
+			}
+		}
+		return b.String()
+	}
+
+	// Collapse multiple underscores while replacing invalid characters
+	var b strings.Builder
+	b.Grow(len(name))
+	prevWasUnderscore := false
+
+	for _, r := range name {
+		if isValidCompliantLabelChar(r) {
+			b.WriteRune(r)
+			prevWasUnderscore = false
+		} else if !prevWasUnderscore {
+			// Invalid character - replace with underscore (collapse consecutive underscores)
+			b.WriteRune('_')
+			prevWasUnderscore = true
+		}
+		// If prevWasUnderscore is true, skip this underscore (collapse)
+	}
+	return b.String()
+}
+
+// isValidCompliantLabelChar checks if a rune is a valid label name character (a-z, A-Z, 0-9).
+func isValidCompliantLabelChar(r rune) bool {
+	return (r >= 'a' && r <= 'z') ||
+		(r >= 'A' && r <= 'Z') ||
+		(r >= '0' && r <= '9')
 }

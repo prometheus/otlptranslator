@@ -25,6 +25,13 @@ import "strings"
 //	result = namer.Build("By/s")   // "bytes_per_second"
 type UnitNamer struct {
 	UTF8Allowed bool
+	// PreserveMultipleUnderscores when true, preserves multiple consecutive underscores
+	// in unit names when UTF8Allowed is false. This option is discouraged
+	// as it violates the OpenTelemetry to Prometheus specification
+	// (https://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus)
+	// but may be needed for compatibility with legacy systems that allow multiple underscores.
+	// This option is ignored when UTF8Allowed is true.
+	PreserveMultipleUnderscores bool
 }
 
 // Build builds a unit name for the specified unit string.
@@ -46,7 +53,7 @@ type UnitNamer struct {
 func (un *UnitNamer) Build(unit string) string {
 	mainUnit, perUnit := buildUnitSuffixes(unit)
 	if !un.UTF8Allowed {
-		mainUnit, perUnit = cleanUpUnit(mainUnit), cleanUpUnit(perUnit)
+		mainUnit, perUnit = cleanUpUnit(mainUnit, un.PreserveMultipleUnderscores), cleanUpUnit(perUnit, un.PreserveMultipleUnderscores)
 	}
 
 	var u string
@@ -120,7 +127,12 @@ func buildUnitSuffixes(unit string) (mainUnitSuffix, perUnitSuffix string) {
 }
 
 // cleanUpUnit cleans up unit so it matches model.LabelNameRE.
-func cleanUpUnit(unit string) string {
+func cleanUpUnit(unit string, preserveMultipleUnderscores bool) string {
+	if preserveMultipleUnderscores {
+		// Preserve multiple underscores - just replace invalid chars
+		cleaned := strings.Map(replaceInvalidMetricChar, unit)
+		return strings.TrimPrefix(cleaned, "_")
+	}
 	// Multiple consecutive underscores are replaced with a single underscore.
 	// This is part of the OTel to Prometheus specification: https://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus.
 	return strings.TrimPrefix(multipleUnderscoresRE.ReplaceAllString(
