@@ -35,6 +35,7 @@ import (
 type LabelNamer struct {
 	UTF8Allowed bool
 	// PermissiveLabelSanitization, if true, disables prepending 'key' to labels starting with '_'.
+	// Deprecated: This will be removed in a future version of otlptranslator.
 	PermissiveLabelSanitization bool
 }
 
