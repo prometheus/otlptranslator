@@ -21,71 +21,71 @@ import (
 )
 
 var labelTestCases = []struct {
-	label               string
-	sanitized           string
-	sanitizedPermissive string
-	wantEscapeErr       bool
-	wantUTF8err         bool
+	label                string
+	sanitized            string
+	sanitizedUnderscores string
+	wantEscapeErr        bool
+	wantUTF8err          bool
 }{
 	{
-		label:               "",
-		sanitized:           "",
-		sanitizedPermissive: "",
-		wantEscapeErr:       true,
-		wantUTF8err:         true,
+		label:                "",
+		sanitized:            "",
+		sanitizedUnderscores: "",
+		wantEscapeErr:        true,
+		wantUTF8err:          true,
 	},
 	{
-		label:               "__",
-		sanitized:           "__",
-		sanitizedPermissive: "__",
-		wantEscapeErr:       false,
-		wantUTF8err:         false,
+		label:                "__",
+		sanitized:            "__",
+		sanitizedUnderscores: "__",
+		wantEscapeErr:        false,
+		wantUTF8err:          false,
 	},
 	{
-		label:               "label:with:colons",
-		sanitized:           "label_with_colons",
-		sanitizedPermissive: "label_with_colons",
+		label:                "label:with:colons",
+		sanitized:            "label_with_colons",
+		sanitizedUnderscores: "label_with_colons",
 	},
 	{
-		label:               "LabelWithCapitalLetters",
-		sanitized:           "LabelWithCapitalLetters",
-		sanitizedPermissive: "LabelWithCapitalLetters",
+		label:                "LabelWithCapitalLetters",
+		sanitized:            "LabelWithCapitalLetters",
+		sanitizedUnderscores: "LabelWithCapitalLetters",
 	},
 	{
-		label:               "label!with&special$chars)",
-		sanitized:           "label_with_special_chars_",
-		sanitizedPermissive: "label_with_special_chars_",
+		label:                "label!with&special$chars)",
+		sanitized:            "label_with_special_chars_",
+		sanitizedUnderscores: "label_with_special_chars_",
 	},
 	{
-		label:               "label_with_foreign_characters_字符",
-		sanitized:           "label_with_foreign_characters___",
-		sanitizedPermissive: "label_with_foreign_characters___",
+		label:                "label_with_foreign_characters_字符",
+		sanitized:            "label_with_foreign_characters___",
+		sanitizedUnderscores: "label_with_foreign_characters___",
 	},
 	{
-		label:               "label.with.dots",
-		sanitized:           "label_with_dots",
-		sanitizedPermissive: "label_with_dots",
+		label:                "label.with.dots",
+		sanitized:            "label_with_dots",
+		sanitizedUnderscores: "label_with_dots",
 	},
 	{
-		label:               "123label",
-		sanitized:           "key_123label",
-		sanitizedPermissive: "key_123label",
+		label:                "123label",
+		sanitized:            "key_123label",
+		sanitizedUnderscores: "key_123label",
 	},
 	{
-		label:               "_label_starting_with_underscore",
-		sanitized:           "key_label_starting_with_underscore",
-		sanitizedPermissive: "_label_starting_with_underscore",
+		label:                "_label_starting_with_underscore",
+		sanitized:            "_label_starting_with_underscore",
+		sanitizedUnderscores: "key_label_starting_with_underscore",
 	},
 	{
-		label:               "__label_starting_with_2underscores",
-		sanitized:           "__label_starting_with_2underscores",
-		sanitizedPermissive: "__label_starting_with_2underscores",
+		label:                "__label_starting_with_2underscores",
+		sanitized:            "__label_starting_with_2underscores",
+		sanitizedUnderscores: "__label_starting_with_2underscores",
 	},
 	{
-		label:               "ようこそ",
-		sanitized:           "",
-		sanitizedPermissive: "",
-		wantEscapeErr:       true,
+		label:                "ようこそ",
+		sanitized:            "",
+		sanitizedUnderscores: "",
+		wantEscapeErr:        true,
 	},
 }
 
@@ -107,12 +107,12 @@ func TestNormalizeLabel(t *testing.T) {
 			if tt.wantEscapeErr {
 				return
 			}
-			labelNamer.PermissiveLabelSanitization = true
+			labelNamer.UnderscoreLabelSanitization = true
 			got, err = labelNamer.Build(tt.label)
 			if err != nil {
 				t.Errorf("LabelNamer.Build(%q) (permissive) returned error %v, want nil", tt.label, err)
 			}
-			if got != tt.sanitizedPermissive {
+			if got != tt.sanitizedUnderscores {
 				t.Errorf("LabelNamer.Build(%q) (permissive) = %q, want %q", tt.label, got, tt.sanitized)
 			}
 		})
@@ -137,7 +137,7 @@ func TestNormalizeLabelUTF8Allowed(t *testing.T) {
 			if tt.wantEscapeErr {
 				return
 			}
-			labelNamer.PermissiveLabelSanitization = true
+			labelNamer.UnderscoreLabelSanitization = true
 			got, err = labelNamer.Build(tt.label)
 			if err != nil {
 				t.Errorf("LabelNamer.Build(%q) (permissive) returned error %v, want nil", tt.label, err)

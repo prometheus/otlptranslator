@@ -34,9 +34,9 @@ import (
 //	result := namer.Build("http.method") // "http_method"
 type LabelNamer struct {
 	UTF8Allowed bool
-	// PermissiveLabelSanitization, if true, disables prepending 'key' to labels starting with '_'.
+	// UnderscoreLabelSanitization, if true, enabled prepending 'key' to labels starting with '_'.
 	// Deprecated: This will be removed in a future version of otlptranslator.
-	PermissiveLabelSanitization bool
+	UnderscoreLabelSanitization bool
 }
 
 // Build normalizes the specified label to follow Prometheus label names standard.
@@ -85,7 +85,7 @@ func (ln *LabelNamer) Build(label string) (normalizedName string, err error) {
 	// If label starts with a number, prepend with "key_".
 	if unicode.IsDigit(rune(normalizedName[0])) {
 		normalizedName = "key_" + normalizedName
-	} else if !ln.PermissiveLabelSanitization && strings.HasPrefix(normalizedName, "_") && !strings.HasPrefix(normalizedName, "__") {
+	} else if ln.UnderscoreLabelSanitization && strings.HasPrefix(normalizedName, "_") && !strings.HasPrefix(normalizedName, "__") {
 		normalizedName = "key" + normalizedName
 	}
 
