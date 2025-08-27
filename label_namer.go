@@ -57,10 +57,6 @@ func (ln *LabelNamer) Build(label string) (normalizedName string, err error) {
 			return
 		}
 
-		if ln.UTF8Allowed || normalizedName == label {
-			return
-		}
-
 		// Check that the resulting normalized name contains at least one non-underscore character
 		for _, c := range normalizedName {
 			if c != '_' {
