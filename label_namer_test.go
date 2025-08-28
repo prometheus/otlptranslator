@@ -21,13 +21,9 @@ import (
 )
 
 var labelTestCases = []struct {
-	label         string
-	sanitized     string
-	wantEscapeErr bool
-	wantUTF8err   bool
+	label     string
+	sanitized string
 }{
-	{label: "", sanitized: "", wantEscapeErr: true, wantUTF8err: true},
-	{label: "__", sanitized: "__", wantEscapeErr: false, wantUTF8err: false},
 	{label: "label:with:colons", sanitized: "label_with_colons"},
 	{label: "LabelWithCapitalLetters", sanitized: "LabelWithCapitalLetters"},
 	{label: "label!with&special$chars)", sanitized: "label_with_special_chars_"},
@@ -36,21 +32,14 @@ var labelTestCases = []struct {
 	{label: "123label", sanitized: "key_123label"},
 	{label: "_label_starting_with_underscore", sanitized: "key_label_starting_with_underscore"},
 	{label: "__label_starting_with_2underscores", sanitized: "__label_starting_with_2underscores"},
-	{label: "ようこそ", sanitized: "", wantEscapeErr: true},
+	{label: "ようこそ", sanitized: ""},
 }
 
-func TestNormalizeLabel(t *testing.T) {
+func TestBuildLabel(t *testing.T) {
 	for _, tt := range labelTestCases {
 		t.Run(tt.label, func(t *testing.T) {
 			labelNamer := LabelNamer{}
-			got, err := labelNamer.Build(tt.label)
-			if tt.wantEscapeErr {
-				if err == nil {
-					t.Errorf("LabelNamer.Build(%q) returned nil err, wanted one, return value %v", tt.label, got)
-				}
-			} else if err != nil {
-				t.Errorf("LabelNamer.Build(%q) returned error %v, want nil", tt.label, err)
-			}
+			got, _ := labelNamer.Build(tt.label)
 			if got != tt.sanitized {
 				t.Errorf("LabelNamer.Build(%q) = %q, want %q", tt.label, got, tt.sanitized)
 			}
@@ -58,20 +47,44 @@ func TestNormalizeLabel(t *testing.T) {
 	}
 }
 
-func TestNormalizeLabelUTF8Allowed(t *testing.T) {
+func TestBuildLabel_UTF8Allowed(t *testing.T) {
 	for _, tt := range labelTestCases {
 		t.Run(tt.label, func(t *testing.T) {
 			labelNamer := LabelNamer{UTF8Allowed: true}
-			got, err := labelNamer.Build(tt.label)
-			if tt.wantUTF8err {
+			got, _ := labelNamer.Build(tt.label)
+			if got != tt.label {
+				t.Errorf("LabelNamer.Build(%q) = %q, want %q", tt.label, got, tt.label)
+			}
+		})
+	}
+}
+
+func TestBuildLabel_Errors(t *testing.T) {
+	labelTestCases := []struct {
+		label         string
+		wantEscapeErr bool
+		wantUTF8err   bool
+	}{
+		{label: "", wantEscapeErr: true, wantUTF8err: true},
+		{label: "__", wantEscapeErr: true, wantUTF8err: true},
+		{label: "ようこそ", wantEscapeErr: true}, // Would be __ if UTF-8 isn't allowed
+	}
+	for _, tt := range labelTestCases {
+		t.Run(tt.label, func(t *testing.T) {
+			if tt.wantEscapeErr {
+				labelNamer := LabelNamer{}
+				got, err := labelNamer.Build(tt.label)
 				if err == nil {
 					t.Errorf("LabelNamer.Build(%q) returned nil err, wanted one, return value %v", tt.label, got)
 				}
-			} else if err != nil {
-				t.Errorf("LabelNamer.Build(%q) returned error %v, want nil", tt.label, err)
 			}
-			if got != tt.label {
-				t.Errorf("LabelNamer.Build(%q) = %q, want %q", tt.label, got, tt.label)
+
+			if tt.wantUTF8err {
+				labelNamer := LabelNamer{UTF8Allowed: true}
+				got, err := labelNamer.Build(tt.label)
+				if err == nil {
+					t.Errorf("LabelNamer.Build(%q) returned nil err, wanted one, return value %v", tt.label, got)
+				}
 			}
 		})
 	}
