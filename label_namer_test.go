@@ -181,3 +181,83 @@ func TestBuildLabel_Errors(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildLabel_PreserveMultipleUnderscores(t *testing.T) {
+	testCases := []struct {
+		name    string
+		namer   LabelNamer
+		label   string
+		want    string
+		wantErr bool
+	}{
+		{
+			name:  "label with double underscores preserved",
+			namer: LabelNamer{UTF8Allowed: false, PreserveMultipleUnderscores: true},
+			label: "label__with__double__underscores",
+			want:  "label__with__double__underscores",
+		},
+		{
+			name:  "label with multiple underscores and special chars preserved",
+			namer: LabelNamer{UTF8Allowed: false, PreserveMultipleUnderscores: true},
+			label: "label.name__with&&special##chars",
+			want:  "label_name__with__special__chars",
+		},
+		{
+			name:  "reserved label keeps multiple preffix and suffix underscores",
+			namer: LabelNamer{UTF8Allowed: false, PreserveMultipleUnderscores: true},
+			label: "__reserved__label__name__",
+			want:  "__reserved__label__name__",
+		},
+		{
+			name:  "reserved label preserved suffix and prefix underscores when PreserveMultipleUnderscores false",
+			namer: LabelNamer{UTF8Allowed: false, PreserveMultipleUnderscores: false},
+			label: "__reserved__label__name__",
+			want:  "__reserved_label_name__",
+		},
+		{
+			name:  "label with trailing multiple underscores",
+			namer: LabelNamer{UTF8Allowed: false, PreserveMultipleUnderscores: true},
+			label: "trailing_underscores___",
+			want:  "trailing_underscores___",
+		},
+		// Default behavior (collapse multiple underscores)
+		{
+			name:  "label with double underscores collapsed by default",
+			namer: LabelNamer{UTF8Allowed: false, PreserveMultipleUnderscores: false},
+			label: "label__with__double__underscores",
+			want:  "label_with_double_underscores",
+		},
+		{
+			name:  "label with special chars and multiple underscores collapsed",
+			namer: LabelNamer{UTF8Allowed: false, PreserveMultipleUnderscores: false},
+			label: "label.name__with&&special##chars",
+			want:  "label_name_with_special_chars",
+		},
+		// UTF8Allowed = true should ignore PreserveMultipleUnderscores
+		{
+			name:  "UTF8 mode ignores PreserveMultipleUnderscores setting",
+			namer: LabelNamer{UTF8Allowed: true, PreserveMultipleUnderscores: false},
+			label: "label__with__special.chars",
+			want:  "label__with__special.chars",
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.namer.Build(tt.label)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("LabelNamer.Build(%q) = %q, want error", tt.label, got)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("LabelNamer.Build(%q) returned error %v, want nil", tt.label, err)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("LabelNamer.Build(%q) = %q, want %q", tt.label, got, tt.want)
+			}
+		})
+	}
+}

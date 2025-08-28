@@ -75,6 +75,10 @@ func (ln *LabelNamer) Build(label string) (string, error) {
 	}
 
 	normalizedName := sanitizeLabelName(label, ln.PreserveMultipleUnderscores)
+	// If normalization results in empty string or only underscores, return error
+	if len(normalizedName) == 0 || hasUnderscoresOnly(normalizedName) {
+		return "", fmt.Errorf("normalization for label name %q resulted in invalid name %q", label, normalizedName)
+	}
 
 	// If label starts with a number, prepend with "key_".
 	if unicode.IsDigit(rune(normalizedName[0])) {
