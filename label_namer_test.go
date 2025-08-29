@@ -21,50 +21,17 @@ import (
 )
 
 var labelTestCases = []struct {
-	label                string
-	sanitized            string
-	sanitizedUnderscores string
+	label     string
+	sanitized string
 }{
-	{
-		label:                "label:with:colons",
-		sanitized:            "label_with_colons",
-		sanitizedUnderscores: "label_with_colons",
-	},
-	{
-		label:                "LabelWithCapitalLetters",
-		sanitized:            "LabelWithCapitalLetters",
-		sanitizedUnderscores: "LabelWithCapitalLetters",
-	},
-	{
-		label:                "label!with&special$chars)",
-		sanitized:            "label_with_special_chars_",
-		sanitizedUnderscores: "label_with_special_chars_",
-	},
-	{
-		label:                "label_with_foreign_characters_字符",
-		sanitized:            "label_with_foreign_characters___",
-		sanitizedUnderscores: "label_with_foreign_characters___",
-	},
-	{
-		label:                "label.with.dots",
-		sanitized:            "label_with_dots",
-		sanitizedUnderscores: "label_with_dots",
-	},
-	{
-		label:                "123label",
-		sanitized:            "key_123label",
-		sanitizedUnderscores: "key_123label",
-	},
-	{
-		label:                "_label_starting_with_underscore",
-		sanitized:            "_label_starting_with_underscore",
-		sanitizedUnderscores: "key_label_starting_with_underscore",
-	},
-	{
-		label:                "__label_starting_with_2underscores",
-		sanitized:            "__label_starting_with_2underscores",
-		sanitizedUnderscores: "__label_starting_with_2underscores",
-	},
+	{label: "label:with:colons", sanitized: "label_with_colons"},
+	{label: "LabelWithCapitalLetters", sanitized: "LabelWithCapitalLetters"},
+	{label: "label!with&special$chars)", sanitized: "label_with_special_chars_"},
+	{label: "label_with_foreign_characters_字符", sanitized: "label_with_foreign_characters___"},
+	{label: "label.with.dots", sanitized: "label_with_dots"},
+	{label: "123label", sanitized: "key_123label"},
+	{label: "_label_starting_with_underscore", sanitized: "_label_starting_with_underscore"},
+	{label: "__label_starting_with_2underscores", sanitized: "__label_starting_with_2underscores"},
 }
 
 func TestBuildLabel(t *testing.T) {
