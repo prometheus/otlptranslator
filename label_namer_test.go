@@ -60,6 +60,8 @@ func TestBuildLabel_UTF8Allowed(t *testing.T) {
 
 // TestBuildLabel_Underscores confirms that `key_` is only prepended to label
 // names starting with an underscore if UnderscoreLabelSanitization is true.
+// Labels starting with a number always get `key_` prepended so they are valid
+// Prometheus labels.
 func TestBuildLabel_Underscores(t *testing.T) {
 	labelTestCases := []struct {
 		label                string
