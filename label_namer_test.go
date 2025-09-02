@@ -30,7 +30,7 @@ var labelTestCases = []struct {
 	{label: "label_with_foreign_characters_字符", sanitized: "label_with_foreign_characters___"},
 	{label: "label.with.dots", sanitized: "label_with_dots"},
 	{label: "123label", sanitized: "key_123label"},
-	{label: "_label_starting_with_underscore", sanitized: "key_label_starting_with_underscore"},
+	{label: "_label_starting_with_underscore", sanitized: "_label_starting_with_underscore"},
 	{label: "__label_starting_with_2underscores", sanitized: "__label_starting_with_2underscores"},
 	{label: "ようこそ", sanitized: ""},
 }
@@ -54,6 +54,56 @@ func TestBuildLabel_UTF8Allowed(t *testing.T) {
 			got, _ := labelNamer.Build(tt.label)
 			if got != tt.label {
 				t.Errorf("LabelNamer.Build(%q) = %q, want %q", tt.label, got, tt.label)
+			}
+		})
+	}
+}
+
+// TestBuildLabel_Underscores confirms that `key_` is only prepended to label
+// names starting with an underscore if UnderscoreLabelSanitization is true.
+// Labels starting with a number always get `key_` prepended so they are valid
+// Prometheus labels.
+func TestBuildLabel_Underscores(t *testing.T) {
+	labelTestCases := []struct {
+		label                string
+		sanitized            string
+		sanitizedUnderscores string
+	}{
+		{
+			label:                "regular label",
+			sanitized:            "regular_label",
+			sanitizedUnderscores: "regular_label",
+		},
+		{
+			label:                "123label",
+			sanitized:            "key_123label",
+			sanitizedUnderscores: "key_123label",
+		},
+		{
+			label:                "_label_starting_with_underscore",
+			sanitized:            "_label_starting_with_underscore",
+			sanitizedUnderscores: "key_label_starting_with_underscore",
+		},
+	}
+	for _, tt := range labelTestCases {
+		t.Run(tt.label, func(t *testing.T) {
+			labelNamer := LabelNamer{}
+			got, err := labelNamer.Build(tt.label)
+			if err != nil {
+				t.Errorf("LabelNamer.Build(%q) returned err: %v", tt.label, got)
+			}
+			if got != tt.sanitized {
+				t.Errorf("LabelNamer.Build(%q) = %q, want %q", tt.label, got, tt.sanitized)
+			}
+
+			labelNamer.UnderscoreLabelSanitization = true
+			got, err = labelNamer.Build(tt.label)
+			if err != nil {
+				t.Errorf("LabelNamer.Build(%q) (underscore mode) returned err: %v", tt.label, got)
+			}
+
+			if got != tt.sanitizedUnderscores {
+				t.Errorf("LabelNamer.Build(%q) (underscore mode) = %q, want %q", tt.label, got, tt.sanitizedUnderscores)
 			}
 		})
 	}
