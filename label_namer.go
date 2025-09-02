@@ -35,7 +35,8 @@ import (
 //	result := namer.Build("http.method") // "http_method"
 type LabelNamer struct {
 	UTF8Allowed bool
-	// UnderscoreLabelSanitization, if true, enabled prepending 'key' to labels starting with '_'.
+	// UnderscoreLabelSanitization, if true, enabled prepending 'key' to labels
+	// starting with '_'. Reserved labels starting with `__` are not modified.
 	//
 	// Deprecated: This will be removed in a future version of otlptranslator.
 	UnderscoreLabelSanitization bool
