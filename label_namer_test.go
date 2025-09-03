@@ -33,6 +33,10 @@ var labelTestCases = []struct {
 	{label: "_label_starting_with_underscore", sanitized: "_label_starting_with_underscore"},
 	{label: "__label_starting_with_2underscores", sanitized: "__label_starting_with_2underscores"},
 	{label: "ようこそ", sanitized: ""},
+	{label: "label__with__double__underscores", sanitized: "label__with__double__underscores"},
+	{label: "label.name__with&&special##chars", sanitized: "label_name__with__special__chars"},
+	{label: "__reserved__label__name__", sanitized: "__reserved__label__name__"},
+	{label: "trailing_underscores___", sanitized: "trailing_underscores___"},
 }
 
 func TestBuildLabel(t *testing.T) {
