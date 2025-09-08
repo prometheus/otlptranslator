@@ -21,65 +21,65 @@ import (
 )
 
 var labelTestCases = []struct {
-	label           string
-	sanitized       string
-	sanitizedLegacy string
+	label                        string
+	sanitized                    string
+	sanitizedMultipleUnderscores string
 }{
 	{label: "label:with:colons", sanitized: "label_with_colons"},
 	{label: "LabelWithCapitalLetters", sanitized: "LabelWithCapitalLetters"},
 	{label: "label!with&special$chars)", sanitized: "label_with_special_chars_"},
 	{
-		label:           "label_with_foreign_characters_字符",
-		sanitized:       "label_with_foreign_characters_",
-		sanitizedLegacy: "label_with_foreign_characters___",
+		label:                        "label_with_foreign_characters_字符",
+		sanitized:                    "label_with_foreign_characters_",
+		sanitizedMultipleUnderscores: "label_with_foreign_characters___",
 	},
 	{label: "label.with.dots", sanitized: "label_with_dots"},
 	{label: "123label", sanitized: "key_123label"},
 	{label: "_label_starting_with_underscore", sanitized: "_label_starting_with_underscore"},
 	{
-		label:           "__label_starting_with_2underscores",
-		sanitized:       "_label_starting_with_2underscores",
-		sanitizedLegacy: "__label_starting_with_2underscores",
+		label:                        "__label_starting_with_2underscores",
+		sanitized:                    "_label_starting_with_2underscores",
+		sanitizedMultipleUnderscores: "__label_starting_with_2underscores",
 	},
 	{label: "ようこそ", sanitized: ""},
 	{
-		label:           "label__with__double__underscores",
-		sanitized:       "label_with_double_underscores",
-		sanitizedLegacy: "label__with__double__underscores",
+		label:                        "label__with__double__underscores",
+		sanitized:                    "label_with_double_underscores",
+		sanitizedMultipleUnderscores: "label__with__double__underscores",
 	},
 	{
-		label:           "label.name__with&&special##chars",
-		sanitized:       "label_name_with_special_chars",
-		sanitizedLegacy: "label_name__with__special__chars",
+		label:                        "label.name__with&&special##chars",
+		sanitized:                    "label_name_with_special_chars",
+		sanitizedMultipleUnderscores: "label_name__with__special__chars",
 	},
 	{
-		label:           "__reserved__label__name__",
-		sanitized:       "__reserved_label_name__",
-		sanitizedLegacy: "__reserved__label__name__",
+		label:                        "__reserved__label__name__",
+		sanitized:                    "__reserved_label_name__",
+		sanitizedMultipleUnderscores: "__reserved__label__name__",
 	},
 	{
-		label:           "trailing_underscores___",
-		sanitized:       "trailing_underscores_",
-		sanitizedLegacy: "trailing_underscores___",
+		label:                        "trailing_underscores___",
+		sanitized:                    "trailing_underscores_",
+		sanitizedMultipleUnderscores: "trailing_underscores___",
 	},
 }
 
 func TestBuildLabel(t *testing.T) {
 	for _, tt := range labelTestCases {
 		t.Run(tt.label, func(t *testing.T) {
-			t.Run("Not preserving legacy behaviour", func(t *testing.T) {
+			t.Run("Not preserving multiple underscores", func(t *testing.T) {
 				labelNamer := LabelNamer{}
 				got, _ := labelNamer.Build(tt.label)
 				if got != tt.sanitized {
 					t.Errorf("LabelNamer.Build(%q) = %q, want %q", tt.label, got, tt.sanitized)
 				}
 			})
-			t.Run("Preserving legacy behavior", func(t *testing.T) {
-				labelNamer := LabelNamer{PreserveLegacyBehavior: true}
+			t.Run("Preserving multiple underscores", func(t *testing.T) {
+				labelNamer := LabelNamer{PreserveMultipleUnderscores: true}
 				got, _ := labelNamer.Build(tt.label)
 				want := tt.sanitized
-				if tt.sanitizedLegacy != "" {
-					want = tt.sanitizedLegacy
+				if tt.sanitizedMultipleUnderscores != "" {
+					want = tt.sanitizedMultipleUnderscores
 				}
 				if got != want {
 					t.Errorf("LabelNamer.Build(%q) = %q, want %q", tt.label, got, want)

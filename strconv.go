@@ -25,13 +25,15 @@ import (
 
 // sanitizeLabelName replaces any characters not valid according to the
 // classical Prometheus label naming scheme with an underscore.
-// When preserveLegacyBehavior is true, multiple consecutive underscores are preserved.
+// When preserveMultipleUnderscores is true, multiple consecutive underscores are preserved.
 // When false, multiple consecutive underscores are collapsed to a single underscore.
-func sanitizeLabelName(name string, preserveLegacyBehavior bool) string {
-	if preserveLegacyBehavior {
+func sanitizeLabelName(name string, preserveMultipleUnderscores bool) string {
+	nameLength := len(name)
+
+	if preserveMultipleUnderscores {
 		// Simple case: just replace invalid characters, preserve multiple underscores
 		var b strings.Builder
-		b.Grow(len(name))
+		b.Grow(nameLength)
 		for _, r := range name {
 			if isValidCompliantLabelChar(r) {
 				b.WriteRune(r)
@@ -49,7 +51,7 @@ func sanitizeLabelName(name string, preserveLegacyBehavior bool) string {
 
 	// Collapse multiple underscores while replacing invalid characters.
 	var b strings.Builder
-	b.Grow(len(name))
+	b.Grow(nameLength)
 	prevWasUnderscore := false
 
 	for _, r := range name {
@@ -57,11 +59,10 @@ func sanitizeLabelName(name string, preserveLegacyBehavior bool) string {
 			b.WriteRune(r)
 			prevWasUnderscore = false
 		} else if !prevWasUnderscore {
-			// Invalid character - replace with underscore (collapse consecutive underscores)
+			// Invalid character - replace with underscore.
 			b.WriteRune('_')
 			prevWasUnderscore = true
 		}
-		// If prevWasUnderscore is true, skip this underscore (collapse)
 	}
 	if isReserved {
 		return "__" + b.String() + "__"

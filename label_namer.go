@@ -40,12 +40,12 @@ type LabelNamer struct {
 	//
 	// Deprecated: This will be removed in a future version of otlptranslator.
 	UnderscoreLabelSanitization bool
-	// PreserveLegacyBehavior enables legacy behaviour, e.g. preserving of multiple
+	// PreserveMultipleUnderscores enables preserving of multiple
 	// consecutive underscores in label names when UTF8Allowed is false.
 	// This option is discouraged as it violates the OpenTelemetry to Prometheus
 	// specification https://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus),
 	// but may be needed for compatibility with legacy systems that rely on the old behavior.
-	PreserveLegacyBehavior bool
+	PreserveMultipleUnderscores bool
 }
 
 // Build normalizes the specified label to follow Prometheus label names standard.
@@ -74,7 +74,7 @@ func (ln *LabelNamer) Build(label string) (string, error) {
 		return label, nil
 	}
 
-	normalizedName := sanitizeLabelName(label, ln.PreserveLegacyBehavior)
+	normalizedName := sanitizeLabelName(label, ln.PreserveMultipleUnderscores)
 
 	// If label starts with a number, prepend with "key_".
 	if unicode.IsDigit(rune(normalizedName[0])) {
