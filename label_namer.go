@@ -43,7 +43,7 @@ type LabelNamer struct {
 	// PreserveLegacyBehavior enables legacy behaviour, e.g. preserving of multiple
 	// consecutive underscores in label names when UTF8Allowed is false.
 	// This option is discouraged as it violates the OpenTelemetry to Prometheus
-	// specification ttps://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus),
+	// specification https://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus),
 	// but may be needed for compatibility with legacy systems that rely on the old behavior.
 	PreserveLegacyBehavior bool
 }
