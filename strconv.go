@@ -87,3 +87,30 @@ func isReservedLabel(name string) (bool, string) {
 	}
 	return true, name[2 : len(name)-2]
 }
+
+// collapseMultipleUnderscores replaces multiple consecutive underscores with a single underscore.
+// This is equivalent to regexp.MustCompile(`__+`).ReplaceAllString(s, "_") but without using regex.
+func collapseMultipleUnderscores(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+
+	var b strings.Builder
+	b.Grow(len(s))
+	prevWasUnderscore := false
+
+	for _, r := range s {
+		if r == '_' {
+			if !prevWasUnderscore {
+				b.WriteRune('_')
+				prevWasUnderscore = true
+			}
+			// Skip consecutive underscores
+		} else {
+			b.WriteRune(r)
+			prevWasUnderscore = false
+		}
+	}
+
+	return b.String()
+}
