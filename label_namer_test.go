@@ -17,13 +17,17 @@
 package otlptranslator
 
 import (
+	"errors"
 	"testing"
 )
 
 var labelTestCases = []struct {
-	label                        string
-	sanitized                    string
-	sanitizedMultipleUnderscores string
+	label                                    string
+	sanitized                                string
+	sanitizedMultipleUnderscores             string
+	wantSanitizationError                    error
+	wantSanitizationMultipleUnderscoresError error
+	wantUTF8Error                            error
 }{
 	{label: "label:with:colons", sanitized: "label_with_colons"},
 	{label: "LabelWithCapitalLetters", sanitized: "LabelWithCapitalLetters"},
@@ -41,7 +45,12 @@ var labelTestCases = []struct {
 		sanitized:                    "_label_starting_with_2underscores",
 		sanitizedMultipleUnderscores: "__label_starting_with_2underscores",
 	},
-	{label: "ようこそ", sanitized: ""},
+	{
+		label:                                    "ようこそ",
+		sanitized:                                "",
+		wantSanitizationError:                    errors.New(`normalization for label name "ようこそ" resulted in invalid name "_"`),
+		wantSanitizationMultipleUnderscoresError: errors.New(`normalization for label name "ようこそ" resulted in invalid name "____"`),
+	},
 	{
 		label:                        "label__with__double__underscores",
 		sanitized:                    "label_with_double_underscores",
@@ -62,6 +71,17 @@ var labelTestCases = []struct {
 		sanitized:                    "trailing_underscores_",
 		sanitizedMultipleUnderscores: "trailing_underscores___",
 	},
+	{
+		label:                 "",
+		wantSanitizationError: errors.New("label name is empty"),
+		wantUTF8Error:         errors.New("label name is empty"),
+	},
+	{
+		label:                                    "__",
+		wantSanitizationError:                    errors.New(`normalization for label name "__" resulted in invalid name "_"`),
+		wantSanitizationMultipleUnderscoresError: errors.New(`normalization for label name "__" resulted in invalid name "__"`),
+		wantUTF8Error:                            errors.New(`label name "__" contains only underscores`),
+	},
 }
 
 func TestBuildLabel(t *testing.T) {
@@ -69,14 +89,47 @@ func TestBuildLabel(t *testing.T) {
 		t.Run(tt.label, func(t *testing.T) {
 			t.Run("Not preserving multiple underscores", func(t *testing.T) {
 				labelNamer := LabelNamer{}
-				got, _ := labelNamer.Build(tt.label)
+				got, err := labelNamer.Build(tt.label)
+				if tt.wantSanitizationError != nil {
+					if err == nil {
+						t.Fatalf("LabelNamer.Build(%q) should have returned an error %q", tt.label, tt.wantSanitizationError)
+					}
+					if err.Error() != tt.wantSanitizationError.Error() {
+						t.Fatalf("LabelNamer.Build(%q) should have returned an error %q, but returned: %q", tt.label, tt.wantSanitizationError, err)
+					}
+					return
+				}
+				if err != nil {
+					t.Fatalf("LabelNamer.Build(%q) returned an error: %s", tt.label, err)
+				}
+
 				if got != tt.sanitized {
 					t.Errorf("LabelNamer.Build(%q) = %q, want %q", tt.label, got, tt.sanitized)
 				}
 			})
 			t.Run("Preserving multiple underscores", func(t *testing.T) {
 				labelNamer := LabelNamer{PreserveMultipleUnderscores: true}
-				got, _ := labelNamer.Build(tt.label)
+				got, err := labelNamer.Build(tt.label)
+				var wantError error
+				switch {
+				case tt.wantSanitizationMultipleUnderscoresError != nil:
+					wantError = tt.wantSanitizationMultipleUnderscoresError
+				case tt.wantSanitizationError != nil:
+					wantError = tt.wantSanitizationError
+				}
+				if wantError != nil {
+					if err == nil {
+						t.Fatalf("LabelNamer.Build(%q) should have returned an error %q", tt.label, wantError)
+					}
+					if err.Error() != wantError.Error() {
+						t.Fatalf("LabelNamer.Build(%q) should have returned an error %q, but returned: %q", tt.label, wantError, err)
+					}
+					return
+				}
+				if err != nil {
+					t.Fatalf("LabelNamer.Build(%q) returned an error: %s", tt.label, err)
+				}
+
 				want := tt.sanitized
 				if tt.sanitizedMultipleUnderscores != "" {
 					want = tt.sanitizedMultipleUnderscores
@@ -93,7 +146,20 @@ func TestBuildLabel_UTF8Allowed(t *testing.T) {
 	for _, tt := range labelTestCases {
 		t.Run(tt.label, func(t *testing.T) {
 			labelNamer := LabelNamer{UTF8Allowed: true}
-			got, _ := labelNamer.Build(tt.label)
+			got, err := labelNamer.Build(tt.label)
+			if tt.wantUTF8Error != nil {
+				if err == nil {
+					t.Fatalf("LabelNamer.Build(%q) should have returned an error %q", tt.label, tt.wantUTF8Error)
+				}
+				if err.Error() != tt.wantUTF8Error.Error() {
+					t.Fatalf("LabelNamer.Build(%q) should have returned an error %q, but returned: %q", tt.label, tt.wantUTF8Error, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("LabelNamer.Build(%q) returned an error: %s", tt.label, err)
+			}
+
 			if got != tt.label {
 				t.Errorf("LabelNamer.Build(%q) = %q, want %q", tt.label, got, tt.label)
 			}
@@ -146,37 +212,6 @@ func TestBuildLabel_Underscores(t *testing.T) {
 
 			if got != tt.sanitizedUnderscores {
 				t.Errorf("LabelNamer.Build(%q) (underscore mode) = %q, want %q", tt.label, got, tt.sanitizedUnderscores)
-			}
-		})
-	}
-}
-
-func TestBuildLabel_Errors(t *testing.T) {
-	labelTestCases := []struct {
-		label         string
-		wantEscapeErr bool
-		wantUTF8err   bool
-	}{
-		{label: "", wantEscapeErr: true, wantUTF8err: true},
-		{label: "__", wantEscapeErr: true, wantUTF8err: true},
-		{label: "ようこそ", wantEscapeErr: true}, // Would be __ if UTF-8 isn't allowed
-	}
-	for _, tt := range labelTestCases {
-		t.Run(tt.label, func(t *testing.T) {
-			if tt.wantEscapeErr {
-				labelNamer := LabelNamer{}
-				got, err := labelNamer.Build(tt.label)
-				if err == nil {
-					t.Errorf("LabelNamer.Build(%q) returned nil err, wanted one, return value %v", tt.label, got)
-				}
-			}
-
-			if tt.wantUTF8err {
-				labelNamer := LabelNamer{UTF8Allowed: true}
-				got, err := labelNamer.Build(tt.label)
-				if err == nil {
-					t.Errorf("LabelNamer.Build(%q) returned nil err, wanted one, return value %v", tt.label, got)
-				}
 			}
 		})
 	}
