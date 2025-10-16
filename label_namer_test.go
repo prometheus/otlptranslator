@@ -22,12 +22,14 @@ import (
 )
 
 var labelTestCases = []struct {
-	label                                    string
-	sanitized                                string
-	sanitizedMultipleUnderscores             string
-	wantSanitizationError                    error
-	wantSanitizationMultipleUnderscoresError error
-	wantUTF8Error                            error
+	label                                                      string
+	sanitized                                                  string
+	sanitizedMultipleUnderscores                               string
+	sanitizedUnderscoreLabelSanitization                       string
+	sanitizedMultipleUnderscoresAndUnderscoreLabelSanitization string
+	wantSanitizationError                                      error
+	wantSanitizationMultipleUnderscoresError                   error
+	wantUTF8Error                                              error
 }{
 	{label: "label:with:colons", sanitized: "label_with_colons"},
 	{label: "LabelWithCapitalLetters", sanitized: "LabelWithCapitalLetters"},
@@ -39,11 +41,17 @@ var labelTestCases = []struct {
 	},
 	{label: "label.with.dots", sanitized: "label_with_dots"},
 	{label: "123label", sanitized: "key_123label"},
-	{label: "_label_starting_with_underscore", sanitized: "_label_starting_with_underscore"},
 	{
-		label:                        "__label_starting_with_2underscores",
-		sanitized:                    "_label_starting_with_2underscores",
-		sanitizedMultipleUnderscores: "__label_starting_with_2underscores",
+		label:                                "_label_starting_with_underscore",
+		sanitized:                            "_label_starting_with_underscore",
+		sanitizedUnderscoreLabelSanitization: "key_label_starting_with_underscore",
+	},
+	{
+		label:                                "__label_starting_with_2underscores",
+		sanitized:                            "_label_starting_with_2underscores",
+		sanitizedMultipleUnderscores:         "__label_starting_with_2underscores",
+		sanitizedUnderscoreLabelSanitization: "key_label_starting_with_2underscores",
+		sanitizedMultipleUnderscoresAndUnderscoreLabelSanitization: "__label_starting_with_2underscores",
 	},
 	{
 		label:                                    "ようこそ",
@@ -106,6 +114,22 @@ func TestBuildLabel(t *testing.T) {
 				if got != tt.sanitized {
 					t.Errorf("LabelNamer.Build(%q) = %q, want %q", tt.label, got, tt.sanitized)
 				}
+
+				t.Run("Sanitizing leading underscore", func(t *testing.T) {
+					labelNamer := LabelNamer{UnderscoreLabelSanitization: true}
+					got, err := labelNamer.Build(tt.label)
+					if err != nil {
+						t.Fatalf("LabelNamer.Build(%q) returned an error: %s", tt.label, err)
+					}
+
+					want := tt.sanitized
+					if tt.sanitizedUnderscoreLabelSanitization != "" {
+						want = tt.sanitizedUnderscoreLabelSanitization
+					}
+					if got != want {
+						t.Errorf("LabelNamer.Build(%q) = %q, want %q", tt.label, got, want)
+					}
+				})
 			})
 			t.Run("Preserving multiple underscores", func(t *testing.T) {
 				labelNamer := LabelNamer{PreserveMultipleUnderscores: true}
@@ -137,6 +161,32 @@ func TestBuildLabel(t *testing.T) {
 				if got != want {
 					t.Errorf("LabelNamer.Build(%q) = %q, want %q", tt.label, got, want)
 				}
+
+				t.Run("Sanitizing leading underscore", func(t *testing.T) {
+					labelNamer := LabelNamer{
+						PreserveMultipleUnderscores: true,
+						UnderscoreLabelSanitization: true,
+					}
+					got, err := labelNamer.Build(tt.label)
+					if err != nil {
+						t.Fatalf("LabelNamer.Build(%q) returned an error: %s", tt.label, err)
+					}
+
+					var want string
+					switch {
+					case tt.sanitizedMultipleUnderscoresAndUnderscoreLabelSanitization != "":
+						want = tt.sanitizedMultipleUnderscoresAndUnderscoreLabelSanitization
+					case tt.sanitizedUnderscoreLabelSanitization != "":
+						want = tt.sanitizedUnderscoreLabelSanitization
+					case tt.sanitizedMultipleUnderscores != "":
+						want = tt.sanitizedMultipleUnderscores
+					default:
+						want = tt.sanitized
+					}
+					if got != want {
+						t.Errorf("LabelNamer.Build(%q) = %q, want %q", tt.label, got, want)
+					}
+				})
 			})
 		})
 	}
@@ -159,59 +209,8 @@ func TestBuildLabel_UTF8Allowed(t *testing.T) {
 			if err != nil {
 				t.Fatalf("LabelNamer.Build(%q) returned an error: %s", tt.label, err)
 			}
-
 			if got != tt.label {
 				t.Errorf("LabelNamer.Build(%q) = %q, want %q", tt.label, got, tt.label)
-			}
-		})
-	}
-}
-
-// TestBuildLabel_Underscores confirms that `key_` is only prepended to label
-// names starting with an underscore if UnderscoreLabelSanitization is true.
-// Labels starting with a number always get `key_` prepended so they are valid
-// Prometheus labels.
-func TestBuildLabel_Underscores(t *testing.T) {
-	labelTestCases := []struct {
-		label                string
-		sanitized            string
-		sanitizedUnderscores string
-	}{
-		{
-			label:                "regular label",
-			sanitized:            "regular_label",
-			sanitizedUnderscores: "regular_label",
-		},
-		{
-			label:                "123label",
-			sanitized:            "key_123label",
-			sanitizedUnderscores: "key_123label",
-		},
-		{
-			label:                "_label_starting_with_underscore",
-			sanitized:            "_label_starting_with_underscore",
-			sanitizedUnderscores: "key_label_starting_with_underscore",
-		},
-	}
-	for _, tt := range labelTestCases {
-		t.Run(tt.label, func(t *testing.T) {
-			labelNamer := LabelNamer{}
-			got, err := labelNamer.Build(tt.label)
-			if err != nil {
-				t.Errorf("LabelNamer.Build(%q) returned err: %v", tt.label, got)
-			}
-			if got != tt.sanitized {
-				t.Errorf("LabelNamer.Build(%q) = %q, want %q", tt.label, got, tt.sanitized)
-			}
-
-			labelNamer.UnderscoreLabelSanitization = true
-			got, err = labelNamer.Build(tt.label)
-			if err != nil {
-				t.Errorf("LabelNamer.Build(%q) (underscore mode) returned err: %v", tt.label, got)
-			}
-
-			if got != tt.sanitizedUnderscores {
-				t.Errorf("LabelNamer.Build(%q) (underscore mode) = %q, want %q", tt.label, got, tt.sanitizedUnderscores)
 			}
 		})
 	}
