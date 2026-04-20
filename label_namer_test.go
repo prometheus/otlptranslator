@@ -216,28 +216,6 @@ func TestBuildLabel_UTF8Allowed(t *testing.T) {
 	}
 }
 
-func TestStringCacheBasics(t *testing.T) {
-	namer := &LabelNamer{CacheDisabled: false}
-
-	// First call should miss cache
-	result, err := namer.Build("http.method")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if result != "http_method" {
-		t.Errorf("expected http_method, got %s", result)
-	}
-
-	// Second call should hit cache
-	result2, err := namer.Build("http.method")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if result2 != "http_method" {
-		t.Errorf("expected http_method, got %s", result2)
-	}
-}
-
 func TestLabelNamerCacheHit(t *testing.T) {
 	namer := &LabelNamer{CacheDisabled: false}
 
