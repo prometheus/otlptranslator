@@ -57,7 +57,7 @@ func BenchmarkNormalizeLabel(b *testing.B) {
 }
 
 func BenchmarkNormalizeLabelWithCache(b *testing.B) {
-	labelNamer := LabelNamer{CacheEnabled: true}
+	labelNamer := LabelNamer{CacheDisabled: false}
 	// Pre-populate cache
 	for _, input := range labelBenchmarkInputs {
 		//nolint:errcheck

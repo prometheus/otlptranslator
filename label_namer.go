@@ -49,12 +49,12 @@ type LabelNamer struct {
 	// specification https://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus),
 	// but may be needed for compatibility with legacy systems that rely on the old behavior.
 	PreserveMultipleUnderscores bool
-	// CacheEnabled specifies whether to enable the transformation cache.
-	// Defaults to true. Set to false to disable caching.
-	CacheEnabled bool
+	// CacheDisabled specifies whether to disable the transformation cache.
+	// Defaults to false (cache enabled). Set to true to disable caching.
+	CacheDisabled bool
 	// once ensures thread-safe lazy initialization of cache.
 	once sync.Once
-	// cache is lazily initialized when CacheEnabled is true.
+	// cache is lazily initialized when CacheDisabled is false.
 	cache *StringCache
 }
 
@@ -85,7 +85,7 @@ func (ln *LabelNamer) Build(label string) (string, error) {
 	}
 
 	// Lazy init cache if enabled (thread-safe via sync.Once)
-	if ln.CacheEnabled {
+	if !ln.CacheDisabled {
 		ln.once.Do(func() {
 			ln.cache = NewStringCache()
 		})

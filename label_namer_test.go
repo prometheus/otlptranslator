@@ -217,7 +217,7 @@ func TestBuildLabel_UTF8Allowed(t *testing.T) {
 }
 
 func TestStringCacheBasics(t *testing.T) {
-	namer := &LabelNamer{CacheEnabled: true}
+	namer := &LabelNamer{CacheDisabled: false}
 
 	// First call should miss cache
 	result, err := namer.Build("http.method")
@@ -239,7 +239,7 @@ func TestStringCacheBasics(t *testing.T) {
 }
 
 func TestLabelNamerCacheHit(t *testing.T) {
-	namer := &LabelNamer{CacheEnabled: true}
+	namer := &LabelNamer{CacheDisabled: false}
 
 	result1, err := namer.Build("http.method")
 	if err != nil {
@@ -260,7 +260,7 @@ func TestLabelNamerCacheHit(t *testing.T) {
 }
 
 func TestLabelNamerCacheDisabled(t *testing.T) {
-	namer := &LabelNamer{CacheEnabled: false}
+	namer := &LabelNamer{CacheDisabled: true}
 
 	result, err := namer.Build("http.method")
 	if err != nil {
@@ -282,7 +282,7 @@ func TestLabelNamerCacheDisabled(t *testing.T) {
 func TestLabelNamerCacheMemorySafety(t *testing.T) {
 	// Create a label that doesn't need transformation
 	label := "already_valid_label"
-	namer := &LabelNamer{CacheEnabled: true}
+	namer := &LabelNamer{CacheDisabled: false}
 
 	result, err := namer.Build(label)
 	if err != nil {
