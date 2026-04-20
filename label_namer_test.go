@@ -19,8 +19,6 @@ package otlptranslator
 import (
 	"errors"
 	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
 var labelTestCases = []struct {
@@ -223,38 +221,62 @@ func TestStringCacheBasics(t *testing.T) {
 
 	// First call should miss cache
 	result, err := namer.Build("http.method")
-	require.NoError(t, err)
-	require.Equal(t, "http_method", result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result != "http_method" {
+		t.Errorf("expected http_method, got %s", result)
+	}
 
 	// Second call should hit cache
 	result2, err := namer.Build("http.method")
-	require.NoError(t, err)
-	require.Equal(t, "http_method", result2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result2 != "http_method" {
+		t.Errorf("expected http_method, got %s", result2)
+	}
 }
 
 func TestLabelNamerCacheHit(t *testing.T) {
 	namer := &LabelNamer{CacheEnabled: true}
 
 	result1, err := namer.Build("http.method")
-	require.NoError(t, err)
-	require.Equal(t, "http_method", result1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result1 != "http_method" {
+		t.Errorf("expected http_method, got %s", result1)
+	}
 
 	// Same label should hit cache
 	result2, err := namer.Build("http.method")
-	require.NoError(t, err)
-	require.Equal(t, "http_method", result2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result2 != "http_method" {
+		t.Errorf("expected http_method, got %s", result2)
+	}
 }
 
 func TestLabelNamerCacheDisabled(t *testing.T) {
 	namer := &LabelNamer{CacheEnabled: false}
 
 	result, err := namer.Build("http.method")
-	require.NoError(t, err)
-	require.Equal(t, "http_method", result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result != "http_method" {
+		t.Errorf("expected http_method, got %s", result)
+	}
 
 	result2, err := namer.Build("http.method")
-	require.NoError(t, err)
-	require.Equal(t, "http_method", result2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result2 != "http_method" {
+		t.Errorf("expected http_method, got %s", result2)
+	}
 }
 
 func TestLabelNamerCacheMemorySafety(t *testing.T) {
@@ -263,8 +285,12 @@ func TestLabelNamerCacheMemorySafety(t *testing.T) {
 	namer := &LabelNamer{CacheEnabled: true}
 
 	result, err := namer.Build(label)
-	require.NoError(t, err)
-	require.Equal(t, label, result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result != label {
+		t.Errorf("expected %s, got %s", label, result)
+	}
 }
 
 func TestLabelNamerCacheEnabledDefault(t *testing.T) {
@@ -272,11 +298,19 @@ func TestLabelNamerCacheEnabledDefault(t *testing.T) {
 	namer := &LabelNamer{}
 
 	result1, err := namer.Build("http.method")
-	require.NoError(t, err)
-	require.Equal(t, "http_method", result1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result1 != "http_method" {
+		t.Errorf("expected http_method, got %s", result1)
+	}
 
 	// Second call should hit cache
 	result2, err := namer.Build("http.method")
-	require.NoError(t, err)
-	require.Equal(t, "http_method", result2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result2 != "http_method" {
+		t.Errorf("expected http_method, got %s", result2)
+	}
 }
