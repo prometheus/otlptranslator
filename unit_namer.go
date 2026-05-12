@@ -24,7 +24,7 @@ import "strings"
 //	result := namer.Build("s")     // "seconds"
 //	result = namer.Build("By/s")   // "bytes_per_second"
 type UnitNamer struct {
-	UTF8Allowed           bool
+	UTF8Allowed          bool
 	UpdatedMetricMapping bool
 }
 

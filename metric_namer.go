@@ -102,34 +102,20 @@ var perUnitMap = map[string]string{
 //
 //	result := namer.Build(metric) // "http_server_duration_seconds"
 type MetricNamer struct {
-	Namespace          string
-	WithMetricSuffixes bool
-	UTF8Allowed        bool
-	// to fix the UCUM metrics suffix tebibyte and kBy
-	UpdatedMetricMapping bool
-}
-
-type Option func(*MetricNamer)
-
-// WithUpdatedMetricMapping enables corrected UCUM unit mappings.
-// It maps TiBy to "tebibytes" instead of "tibibytes"
-// and adds kBy as "kilobytes" the correct notation.
-func WithUpdatedMetricMapping() Option {
-	return func(mn *MetricNamer) {
-		mn.UpdatedMetricMapping = true
-	}
+	Namespace            string
+	WithMetricSuffixes   bool
+	UTF8Allowed          bool
+	UpdatedMetricMapping bool // to fix the UCUM metrics suffix tebibyte and kBy
 }
 
 // NewMetricNamer creates a MetricNamer with the specified namespace (can be
 // blank) and the requested Translation Strategy.
-func NewMetricNamer(namespace string, strategy TranslationStrategyOption, opts ...Option) MetricNamer {
+func NewMetricNamer(namespace string, strategy TranslationStrategyOption) MetricNamer {
 	mn := MetricNamer{
-		Namespace:          namespace,
-		WithMetricSuffixes: strategy.ShouldAddSuffixes(),
-		UTF8Allowed:        !strategy.ShouldEscape(),
-	}
-	for _, opt := range opts {
-		opt(&mn)
+		Namespace:            namespace,
+		WithMetricSuffixes:   strategy.ShouldAddSuffixes(),
+		UTF8Allowed:          !strategy.ShouldEscape(),
+		UpdatedMetricMapping: strategy.ShouldUseUpdatedSuffixes(),
 	}
 	return mn
 }

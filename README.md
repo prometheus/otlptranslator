@@ -12,7 +12,7 @@ Part of the [Prometheus](https://prometheus.io/) ecosystem, following the [OpenT
 - **Namespace Support**: Add configurable namespace prefixes
 - **UTF-8 Support**: Choose between Prometheus legacy scheme compliant metric/label names (`[a-zA-Z0-9:_]`) or untranslated metric/label names
 - **Translation Strategy Configuration**: Select a translation strategy with a standard set of strings.
-- **Configurable Updated Unit Mappings**: Opt in to corrected UCUM unit suffixes via `WithUpdatedMetricMapping()` option.
+- **Updated UCUM Unit Mappings**: Opt in to corrected UCUM unit suffixes (`TiBy`: `tebibytes`, `kBy`: `kilobytes`) by selecting the `UnderscoreEscapingWithUpdatedSuffixes` or `NoUTF8EscapingWithUpdatedSuffixes` translation strategy.
 
 ## Installation
 
@@ -32,11 +32,10 @@ import (
 
 func main() {
     // Create a metric namer using traditional Prometheus name translation, with suffixes added and UTF-8 disallowed.
-    strategy := otlptranslator.UnderscoreEscapingWithSuffixes
-    
-    // WithUpdatedMetricMapping enables corrected UCUM unit mappings:
+    // Use UnderscoreEscapingWithUpdatedSuffixes to opt into corrected UCUM unit mappings:
     // TiBy -> "tebibytes" instead of "tibibytes" and kBy -> "kilobytes".
-    namer := otlptranslator.NewMetricNamer("myapp", strategy, otlptranslator.WithUpdatedMetricMapping())
+    strategy := otlptranslator.UnderscoreEscapingWithUpdatedSuffixes
+    namer := otlptranslator.NewMetricNamer("myapp", strategy)
 
     // Translate OTLP metric to Prometheus format
     metric := otlptranslator.Metric{
