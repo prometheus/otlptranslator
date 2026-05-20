@@ -46,6 +46,10 @@ var labelBenchmarkInputs = []struct {
 		name:  "label starting with 2 underscores",
 		label: "__label_starting_with_2underscores",
 	},
+	{
+		name:  "reserved label",
+		label: "__reserved__label__name__",
+	},
 }
 
 func BenchmarkNormalizeLabel(b *testing.B) {

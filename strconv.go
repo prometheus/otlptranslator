@@ -53,6 +53,9 @@ func sanitizeLabelName(name string, preserveMultipleUnderscores bool) string {
 	// Collapse multiple underscores while replacing invalid characters.
 	var b strings.Builder
 	b.Grow(nameLength)
+	if isReserved {
+		b.WriteString("__")
+	}
 	prevWasUnderscore := false
 
 	for _, r := range name {
@@ -66,7 +69,7 @@ func sanitizeLabelName(name string, preserveMultipleUnderscores bool) string {
 		}
 	}
 	if isReserved {
-		return "__" + b.String() + "__"
+		b.WriteString("__")
 	}
 	return b.String()
 }
