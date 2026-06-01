@@ -23,6 +23,9 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
 	"unicode"
 )
 
@@ -46,6 +49,13 @@ type LabelNamer struct {
 	// specification https://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus),
 	// but may be needed for compatibility with legacy systems that rely on the old behavior.
 	PreserveMultipleUnderscores bool
+	// CacheDisabled specifies whether to disable the transformation cache.
+	// Defaults to false (cache enabled). Set to true to disable caching.
+	CacheDisabled bool
+	// once ensures thread-safe lazy initialization of cache.
+	once sync.Once
+	// cache is lazily initialized when CacheDisabled is false.
+	cache *StringCache
 }
 
 // Build normalizes the specified label to follow Prometheus label names standard.
@@ -74,6 +84,61 @@ func (ln *LabelNamer) Build(label string) (string, error) {
 		return label, nil
 	}
 
+	// Lazy init cache if enabled (thread-safe via sync.Once)
+	if !ln.CacheDisabled {
+		ln.once.Do(func() {
+			ln.cache = NewStringCache()
+		})
+	}
+
+	// Try cache first
+	if ln.cache != nil {
+		if v, ok := ln.cache.m.Load(label); ok {
+			e := v.(*cacheEntry)
+			ct := uint64(time.Now().Unix())
+			if e.lastAccessTime.Load()+10 < ct {
+				e.lastAccessTime.Store(ct)
+			}
+			return e.value, nil
+		}
+	}
+
+	// Cache miss - transform
+	result, err := ln.buildWithoutCache(label)
+	if err != nil {
+		return result, err
+	}
+
+	// Store in cache with memory safety
+	if ln.cache != nil {
+		label = strings.Clone(label)
+		if result == label {
+			result = label
+		}
+		e := &cacheEntry{
+			value: result,
+		}
+		e.lastAccessTime.Store(uint64(time.Now().Unix()))
+		ln.cache.m.Store(label, e)
+
+		// Lazy cleanup
+		ct := uint64(time.Now().Unix())
+		if needCleanup(&ln.cache.lastCleanupTime, ct) {
+			deadline := ct - uint64(ln.cache.expireDuration.Seconds())
+			ln.cache.m.Range(func(k, v any) bool {
+				e := v.(*cacheEntry)
+				if e.lastAccessTime.Load() < deadline {
+					ln.cache.m.Delete(k)
+				}
+				return true
+			})
+		}
+	}
+
+	return result, nil
+}
+
+func (ln *LabelNamer) buildWithoutCache(label string) (string, error) {
 	normalizedName := sanitizeLabelName(label, ln.PreserveMultipleUnderscores)
 
 	// If label starts with a number, prepend with "key_".
@@ -97,4 +162,34 @@ func hasUnderscoresOnly(label string) bool {
 		}
 	}
 	return true
+}
+
+// StringCache caches string transformations.
+// It is safe for concurrent use.
+type StringCache struct {
+	m               sync.Map
+	lastCleanupTime atomic.Uint64
+	expireDuration  time.Duration
+}
+
+type cacheEntry struct {
+	lastAccessTime atomic.Uint64
+	value          string
+}
+
+// NewStringCache creates a new StringCache with default expiry duration.
+func NewStringCache() *StringCache {
+	return &StringCache{
+		expireDuration: 6 * time.Minute,
+	}
+}
+
+// needCleanup returns true if cleanup should be performed.
+// It is called lazily on Transform to avoid background goroutines.
+func needCleanup(lastCleanupTime *atomic.Uint64, currentTime uint64) bool {
+	lct := lastCleanupTime.Load()
+	if lct+61 >= currentTime {
+		return false
+	}
+	return lastCleanupTime.CompareAndSwap(lct, currentTime)
 }

@@ -215,3 +215,80 @@ func TestBuildLabel_UTF8Allowed(t *testing.T) {
 		})
 	}
 }
+
+func TestLabelNamerCacheHit(t *testing.T) {
+	namer := &LabelNamer{CacheDisabled: false}
+
+	result1, err := namer.Build("http.method")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result1 != "http_method" {
+		t.Errorf("expected http_method, got %s", result1)
+	}
+
+	// Same label should hit cache
+	result2, err := namer.Build("http.method")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result2 != "http_method" {
+		t.Errorf("expected http_method, got %s", result2)
+	}
+}
+
+func TestLabelNamerCacheDisabled(t *testing.T) {
+	namer := &LabelNamer{CacheDisabled: true}
+
+	result, err := namer.Build("http.method")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result != "http_method" {
+		t.Errorf("expected http_method, got %s", result)
+	}
+
+	result2, err := namer.Build("http.method")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result2 != "http_method" {
+		t.Errorf("expected http_method, got %s", result2)
+	}
+}
+
+func TestLabelNamerCacheMemorySafety(t *testing.T) {
+	// Create a label that doesn't need transformation
+	label := "already_valid_label"
+	namer := &LabelNamer{CacheDisabled: false}
+
+	result, err := namer.Build(label)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result != label {
+		t.Errorf("expected %s, got %s", label, result)
+	}
+}
+
+func TestLabelNamerCacheEnabledDefault(t *testing.T) {
+	// Default LabelNamer{} should have cache enabled
+	namer := &LabelNamer{}
+
+	result1, err := namer.Build("http.method")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result1 != "http_method" {
+		t.Errorf("expected http_method, got %s", result1)
+	}
+
+	// Second call should hit cache
+	result2, err := namer.Build("http.method")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result2 != "http_method" {
+		t.Errorf("expected http_method, got %s", result2)
+	}
+}

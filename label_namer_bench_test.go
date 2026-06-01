@@ -55,3 +55,22 @@ func BenchmarkNormalizeLabel(b *testing.B) {
 		})
 	}
 }
+
+func BenchmarkNormalizeLabelWithCache(b *testing.B) {
+	labelNamer := LabelNamer{CacheDisabled: false}
+	// Pre-populate cache
+	for _, input := range labelBenchmarkInputs {
+		//nolint:errcheck
+		labelNamer.Build(input.label)
+	}
+
+	b.ResetTimer()
+	for _, input := range labelBenchmarkInputs {
+		b.Run(input.name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				//nolint:errcheck
+				labelNamer.Build(input.label)
+			}
+		})
+	}
+}
