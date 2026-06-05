@@ -74,6 +74,10 @@ func (ln *LabelNamer) Build(label string) (string, error) {
 		return label, nil
 	}
 
+	if canFastPathLabel(label, ln.PreserveMultipleUnderscores, ln.UnderscoreLabelSanitization) {
+		return label, nil
+	}
+
 	normalizedName := sanitizeLabelName(label, ln.PreserveMultipleUnderscores)
 
 	// If label starts with a number, prepend with "key_".
