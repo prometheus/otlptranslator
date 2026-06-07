@@ -40,11 +40,19 @@ func main() {
         Unit: "s",
         Type: otlptranslator.MetricTypeHistogram,
     }
-    fmt.Println(namer.Build(metric)) // Output: myapp_http_server_request_duration_seconds
+    metricName, err := namer.Build(metric)
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println(metricName) // Output: myapp_http_server_request_duration_seconds
 
     // Translate label names
     labelNamer := otlptranslator.LabelNamer{UTF8Allowed: false}
-    fmt.Println(labelNamer.Build("http.method")) // Output: http_method
+    labelName, err := labelNamer.Build("http.method")
+    if err != nil {
+        panic(err)
+    }
+    fmt.Println(labelName) // Output: http_method
 }
 ```
 
@@ -59,19 +67,22 @@ namer := otlptranslator.MetricNamer{WithMetricSuffixes: true, UTF8Allowed: false
 counter := otlptranslator.Metric{
     Name: "requests.count", Unit: "1", Type: otlptranslator.MetricTypeMonotonicCounter,
 }
-fmt.Println(namer.Build(counter)) // requests_count_total
+counterName, _ := namer.Build(counter)
+fmt.Println(counterName) // requests_count_total
 
 // Gauge with unit conversion
 gauge := otlptranslator.Metric{
     Name: "memory.usage", Unit: "By", Type: otlptranslator.MetricTypeGauge,
 }
-fmt.Println(namer.Build(gauge)) // memory_usage_bytes
+gaugeName, _ := namer.Build(gauge)
+fmt.Println(gaugeName) // memory_usage_bytes
 
 // Dimensionless gauge gets _ratio suffix
 ratio := otlptranslator.Metric{
     Name: "cpu.utilization", Unit: "1", Type: otlptranslator.MetricTypeGauge,
 }
-fmt.Println(namer.Build(ratio)) // cpu_utilization_ratio
+ratioName, _ := namer.Build(ratio)
+fmt.Println(ratioName) // cpu_utilization_ratio
 ```
 
 ### Label Translation
@@ -79,11 +90,11 @@ fmt.Println(namer.Build(ratio)) // cpu_utilization_ratio
 ```go
 labelNamer := otlptranslator.LabelNamer{UTF8Allowed: false}
 
-labelNamer.Build("http.method")           // http_method
-labelNamer.Build("123invalid")            // key_123invalid
-labelNamer.Build("_private")              // key_private
-labelNamer.Build("__reserved__")          // __reserved__ (preserved)
-labelNamer.Build("label@with$symbols")    // label_with_symbols
+labelNamer.Build("http.method")           // http_method, nil
+labelNamer.Build("123invalid")            // key_123invalid, nil
+labelNamer.Build("_private")              // _private, nil
+labelNamer.Build("__reserved__")          // __reserved__, nil
+labelNamer.Build("label@with$symbols")    // label_with_symbols, nil
 ```
 
 ### Unit Translation
@@ -105,7 +116,7 @@ compliantNamer := otlptranslator.MetricNamer{UTF8Allowed: false, WithMetricSuffi
 
 // Transparent pass-through mode, aka "NoTranslation"
 utf8Namer := otlptranslator.MetricNamer{UTF8Allowed: true, WithMetricSuffixes: false}
-utf8Namer = otlptranslator.NewMetricNamer("", otlpTranslator.NoTranslation)
+utf8Namer = otlptranslator.NewMetricNamer("", otlptranslator.NoTranslation)
 
 // With namespace and suffixes
 productionNamer := otlptranslator.MetricNamer{
