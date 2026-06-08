@@ -32,7 +32,11 @@ import (
 // Example usage:
 //
 //	namer := LabelNamer{UTF8Allowed: false}
-//	result := namer.Build("http.method") // "http_method"
+//	result, err := namer.Build("http.method")
+//	if err != nil {
+//		// handle err
+//	}
+//	// result == "http_method"
 type LabelNamer struct {
 	UTF8Allowed bool
 	// UnderscoreLabelSanitization, if true, enabled prepending 'key' to labels
@@ -52,7 +56,8 @@ type LabelNamer struct {
 //
 // Translation rules:
 //   - Replaces invalid characters with underscores
-//   - Prefixes labels with invalid start characters (numbers or `_`) with "key"
+//   - Prefixes labels starting with a digit with "key_"
+//   - With the deprecated UnderscoreLabelSanitization option, prefixes labels starting with a single underscore with "key"
 //   - Preserves double underscore labels (reserved names)
 //   - If UTF8Allowed is true, returns label as-is
 //

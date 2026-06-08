@@ -95,7 +95,11 @@ var perUnitMap = map[string]string{
 //		Type: MetricTypeHistogram,
 //	}
 //
-//	result := namer.Build(metric) // "http_server_duration_seconds"
+//	result, err := namer.Build(metric)
+//	if err != nil {
+//		// handle err
+//	}
+//	// result == "http_server_duration_seconds"
 type MetricNamer struct {
 	Namespace          string
 	WithMetricSuffixes bool
@@ -143,11 +147,19 @@ type Metric struct {
 //
 //	// Counter gets _total suffix
 //	counter := Metric{Name: "requests.count", Unit: "1", Type: MetricTypeMonotonicCounter}
-//	result := namer.Build(counter) // "requests_count_total"
+//	result, err := namer.Build(counter)
+//	if err != nil {
+//		// handle err
+//	}
+//	// result == "requests_count_total"
 //
 //	// Gauge with unit suffix
 //	gauge := Metric{Name: "memory.usage", Unit: "By", Type: MetricTypeGauge}
-//	result = namer.Build(gauge) // "memory_usage_bytes"
+//	result, err = namer.Build(gauge)
+//	if err != nil {
+//		// handle err
+//	}
+//	// result == "memory_usage_bytes"
 func (mn *MetricNamer) Build(metric Metric) (string, error) {
 	if mn.UTF8Allowed {
 		return mn.buildMetricName(metric.Name, metric.Unit, metric.Type)
