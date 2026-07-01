@@ -11,6 +11,10 @@ var labelBenchmarkInputs = []struct {
 		label: "",
 	},
 	{
+		name:  "already-valid label",
+		label: "http_method_total",
+	},
+	{
 		name:  "label with colons",
 		label: "label:with:colons",
 	},
@@ -42,13 +46,18 @@ var labelBenchmarkInputs = []struct {
 		name:  "label starting with 2 underscores",
 		label: "__label_starting_with_2underscores",
 	},
+	{
+		name:  "reserved label",
+		label: "__reserved__label__name__",
+	},
 }
 
 func BenchmarkNormalizeLabel(b *testing.B) {
 	labelNamer := LabelNamer{UTF8Allowed: false}
 	for _, input := range labelBenchmarkInputs {
 		b.Run(input.name, func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			b.ReportAllocs()
+			for b.Loop() {
 				//nolint:errcheck
 				labelNamer.Build(input.label)
 			}

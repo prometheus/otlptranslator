@@ -21,6 +21,7 @@ package otlptranslator
 
 import (
 	"strings"
+	"unicode"
 )
 
 // sanitizeLabelName replaces any characters not valid according to the
@@ -52,6 +53,9 @@ func sanitizeLabelName(name string, preserveMultipleUnderscores bool) string {
 	// Collapse multiple underscores while replacing invalid characters.
 	var b strings.Builder
 	b.Grow(nameLength)
+	if isReserved {
+		b.WriteString("__")
+	}
 	prevWasUnderscore := false
 
 	for _, r := range name {
@@ -65,7 +69,7 @@ func sanitizeLabelName(name string, preserveMultipleUnderscores bool) string {
 		}
 	}
 	if isReserved {
-		return "__" + b.String() + "__"
+		b.WriteString("__")
 	}
 	return b.String()
 }
@@ -73,6 +77,55 @@ func sanitizeLabelName(name string, preserveMultipleUnderscores bool) string {
 // isValidCompliantLabelChar checks if a rune is a valid label name character (a-z, A-Z, 0-9).
 func isValidCompliantLabelChar(r rune) bool {
 	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9')
+}
+
+// canFastPathLabel reports whether LabelNamer.Build would return label unchanged when UTF8Allowed is false.
+// When it returns true, the label can be returned directly. The predicate must remain
+// consistent with sanitizeLabelName and the post-sanitize prefix logic in LabelNamer.Build.
+func canFastPathLabel(label string, preserveMultipleUnderscores, underscoreLabelSanitization bool) bool {
+	n := len(label)
+	if n == 0 {
+		return false
+	}
+
+	// Leading digit triggers a "key_" prepend.
+	if unicode.IsDigit(rune(label[0])) {
+		return false
+	}
+	// Single leading '_' under sanitization triggers a "key" prepend.
+	if underscoreLabelSanitization && strings.HasPrefix(label, "_") && !strings.HasPrefix(label, "__") {
+		return false
+	}
+
+	// Reserved labels (__...__) under !preserveMultipleUnderscores get stripped,
+	// sanitized, then re-wrapped. The output equals the input iff the inner range
+	// already sanitizes to itself.
+	start, end := 0, n
+	if !preserveMultipleUnderscores && n >= 4 && strings.HasPrefix(label, "__") && strings.HasSuffix(label, "__") {
+		start, end = 2, n-2
+	}
+
+	prevWasUnderscore := false
+	sawNonUnderscore := false
+	for i := start; i < end; i++ {
+		c := label[i]
+		if !isValidCompliantLabelChar(rune(c)) && c != '_' {
+			// Non-ASCII bytes (lead/continuation of multi-byte runes) fall here.
+			return false
+		}
+		if c == '_' {
+			if !preserveMultipleUnderscores && prevWasUnderscore {
+				return false
+			}
+			prevWasUnderscore = true
+		} else {
+			prevWasUnderscore = false
+			sawNonUnderscore = true
+		}
+	}
+	// An all-underscore (or empty inner) result would hit Build's hasUnderscoresOnly
+	// error path; let the slow path produce the error.
+	return sawNonUnderscore
 }
 
 // isReservedLabel checks if a label is a reserved label.
