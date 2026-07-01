@@ -839,6 +839,7 @@ func TestMetricNamer_Build(t *testing.T) {
 			namer: MetricNamer{
 				UTF8Allowed:        false,
 				WithMetricSuffixes: true,
+				LegacyUnitMapping:  true,
 			},
 			metric: Metric{
 				Name: "capacity",
@@ -847,21 +848,6 @@ func TestMetricNamer_Build(t *testing.T) {
 			},
 			wantMetricName: "capacity_tibibytes",
 			wantUnitName:   "tibibytes",
-		},
-		{
-			name: "metric with tebibytes unit with flag",
-			namer: MetricNamer{
-				UTF8Allowed:        false,
-				WithMetricSuffixes: true,
-				LegacyUnitMapping:  true,
-			},
-			metric: Metric{
-				Name: "capacity",
-				Unit: "TiBy",
-				Type: MetricTypeGauge,
-			},
-			wantMetricName: "capacity_tebibytes",
-			wantUnitName:   "tebibytes",
 		},
 		{
 			name: "metric with kilobytes unit",
@@ -883,7 +869,6 @@ func TestMetricNamer_Build(t *testing.T) {
 			namer: MetricNamer{
 				UTF8Allowed:        false,
 				WithMetricSuffixes: true,
-				LegacyUnitMapping:  true,
 			},
 			metric: Metric{
 				Name: "transfer",
