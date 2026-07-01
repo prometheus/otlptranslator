@@ -7,12 +7,12 @@ Part of the [Prometheus](https://prometheus.io/) ecosystem, following the [OpenT
 ## Features
 
 - **Metric Name and Label Translation**: Convert OTLP metric names and attributes to Prometheus-compliant format
-- **Unit Handling**: Translate OTLP units to Prometheus unit conventions
+- **Unit Handling**: Translate OTLP units to Prometheus unit conventions, using spec-correct UCUM mappings by default with an opt-out (`LegacyUnitMapping`) for callers pinned to pre-correction names
+- 
 - **Type-Aware Suffixes**: Optionally append `_total`, `_ratio` based on metric type
 - **Namespace Support**: Add configurable namespace prefixes
 - **UTF-8 Support**: Choose between Prometheus legacy scheme compliant metric/label names (`[a-zA-Z0-9:_]`) or untranslated metric/label names
 - **Translation Strategy Configuration**: Select a translation strategy with a standard set of strings.
-- **Updated UCUM Unit Mappings**: Opt in to corrected UCUM unit suffixes (`TiBy`: `tebibytes`, `kBy`: `kilobytes`) by selecting the `UnderscoreEscapingWithUpdatedSuffixes` or `NoUTF8EscapingWithUpdatedSuffixes` translation strategy.
 
 ## Installation
 
@@ -109,7 +109,24 @@ unitNamer.Build("s")           // seconds
 unitNamer.Build("By")          // bytes
 unitNamer.Build("requests/s")  // requests_per_second
 unitNamer.Build("1")           // "" (dimensionless)
-```
+
+### Migration: Pre-correction unit suffixes
+
+This library now uses the spec-correct UCUM unit suffixes by default. Two mappings changed compared to earlier releases:
+
+- `TiBy` → `tebibytes` (previously `tibibytes` — `tebi-` is the SI binary prefix; the older spelling was a misspelling).
+- `kBy` → `kilobytes` is **newly** recognised (previously not mapped). `KBy` continues to map to `kilobytes` as before, for backwards compatibility.
+
+**Behavior change for existing consumers**: dashboards, alerts, and recording rules that reference `*_tibibytes` will silently stop receiving new datapoints once your Prometheus / OTel Collector deployment picks up this library version.
+To preserve the pre-correction names while you migrate, opt in to the legacy mapping (combine with `UTF8Allowed: true` if your callers use UTF-8 metric names):
+
+\\\go
+namer := otlptranslator.MetricNamer{
+    WithMetricSuffixes: true,
+    LegacyUnitMapping:  true,
+}
+\\\
+
 
 ### Configuration Options
 

@@ -25,7 +25,11 @@ import "strings"
 //	result = namer.Build("By/s")   // "bytes_per_second"
 type UnitNamer struct {
 	UTF8Allowed          bool
-	UpdatedMetricMapping bool
+	// LegacyUnitMapping selects the pre-correction UCUM unit mappings (e.g.
+	// "TiBy" -> "tibibytes" instead of the spec-correct "tebibytes"). The
+	// default value (false) uses the spec-correct mappings. Set to true to
+	// preserve metric names produced by older versions of this library.
+	LegacyUnitMapping bool
 }
 
 // Build builds a unit name for the specified unit string.
@@ -74,13 +78,13 @@ func (un *UnitNamer) Build(unit string) string {
 // Retrieve the Prometheus "basic" unit corresponding to the specified "basic" unit.
 // Returns the specified unit if not found in unitMap.
 func unitMapGetOrDefault(unit string, updatedSuffix bool) string {
-	if updatedSuffix {
-		// checks for updatd values, TiBy <-> tebibytes and kBy <-> kilobytes.
-		if promUnit, ok := updatedUnitMap[unit]; ok {
+	if legacy {
+		if promUnit, ok := legacyUnitMap[unit]; ok {
 			return promUnit
 		}
-		// doesnt return cause what if the unit is not in the updated map but is
-		// in the original map, we want to check that as well.
+		if _, excluded := legacyUnitExclusions[unit]; excluded {
+			return unit
+		}
 	}
 	if promUnit, ok := unitMap[unit]; ok {
 		return promUnit

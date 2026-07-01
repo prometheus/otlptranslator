@@ -57,17 +57,6 @@ var (
 	// (https://github.com/prometheus/proposals/pull/39) once released, as
 	// potential mitigation of the above risks.
 	NoTranslation TranslationStrategyOption = "NoTranslation"
-	// NoUTF8EscapingWithUpdatedSuffixes will accept metric/label names as they are. Unit
-	// and type suffixes may be added to metric names, according to certain rules.
-	// This option includes an updated mapping for the UCUM metrics suffixes tebibyte and kBy.
-	NoUTF8EscapingWithUpdatedSuffixes TranslationStrategyOption = "NoUTF8EscapingWithUpdatedSuffixes"
-	// UnderscoreEscapingWithSuffixes is the default option for translating OTLP
-	// to Prometheus. This option will translate metric name characters that are
-	// not alphanumerics/underscores/colons to underscores, and label name
-	// characters that are not alphanumerics/underscores to underscores. Unit and
-	// type suffixes may be appended to metric names, according to certain rules.
-	// This option includes an updated mapping for the UCUM metrics suffixes tebibyte and kBy.
-	UnderscoreEscapingWithUpdatedSuffixes TranslationStrategyOption = "UnderscoreEscapingWithUpdatedSuffixes"
 )
 
 // ShouldEscape returns true if the translation strategy requires that metric

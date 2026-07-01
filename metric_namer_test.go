@@ -569,6 +569,51 @@ func TestMetricNamer_Build(t *testing.T) {
 			wantUnitName:   "per_second",
 		},
 		{
+			name: "utf8 metric with TiBy under default unit mapping",
+			namer: MetricNamer{
+				UTF8Allowed:        true,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "capacity",
+				Unit: "TiBy",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "capacity_tebibytes",
+			wantUnitName:   "tebibytes",
+		},
+		{
+			name: "utf8 metric with TiBy under legacy unit mapping",
+			namer: MetricNamer{
+				UTF8Allowed:        true,
+				WithMetricSuffixes: true,
+				LegacyUnitMapping:  true,
+			},
+			metric: Metric{
+				Name: "capacity",
+				Unit: "TiBy",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "capacity_tibibytes",
+			wantUnitName:   "tibibytes",
+		},
+		{
+			name: "utf8 metric with kBy under legacy unit mapping passes through unmapped",
+			namer: MetricNamer{
+				UTF8Allowed:        true,
+				WithMetricSuffixes: true,
+				LegacyUnitMapping:  true,
+			},
+			metric: Metric{
+				Name: "transfer",
+				Unit: "kBy",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "transfer_kBy",
+			wantUnitName:   "kBy",
+		},
+		{
+		{
 			name:  "utf8 metric with namespace and suffixes",
 			namer: NewMetricNamer("ñamespace", NoUTF8EscapingWithSuffixes),
 			metric: Metric{
@@ -1261,7 +1306,7 @@ func TestMetricNamer_Build(t *testing.T) {
 			if tt.namer.WithMetricSuffixes {
 				unitNamer := UnitNamer{
 					UTF8Allowed:          tt.namer.UTF8Allowed,
-					UpdatedMetricMapping: tt.namer.UpdatedMetricMapping,
+					LegacyUnitMapping: tt.namer.LegacyUnitMapping,
 				}
 				gotUnitName := unitNamer.Build(tt.metric.Unit)
 				if gotUnitName != tt.wantUnitName {
