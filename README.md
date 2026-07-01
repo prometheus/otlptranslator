@@ -32,9 +32,7 @@ import (
 
 func main() {
     // Create a metric namer using traditional Prometheus name translation, with suffixes added and UTF-8 disallowed.
-    // Use UnderscoreEscapingWithUpdatedSuffixes to opt into corrected UCUM unit mappings:
-    // TiBy -> "tebibytes" instead of "tibibytes" and kBy -> "kilobytes".
-    strategy := otlptranslator.UnderscoreEscapingWithUpdatedSuffixes
+    strategy := otlptranslator.UnderscoreEscapingWithSuffixes
     namer := otlptranslator.NewMetricNamer("myapp", strategy)
 
     // Translate OTLP metric to Prometheus format
@@ -120,12 +118,12 @@ This library now uses the spec-correct UCUM unit suffixes by default. Two mappin
 **Behavior change for existing consumers**: dashboards, alerts, and recording rules that reference `*_tibibytes` will silently stop receiving new datapoints once your Prometheus / OTel Collector deployment picks up this library version.
 To preserve the pre-correction names while you migrate, opt in to the legacy mapping (combine with `UTF8Allowed: true` if your callers use UTF-8 metric names):
 
-\\\go
+```go
 namer := otlptranslator.MetricNamer{
     WithMetricSuffixes: true,
     LegacyUnitMapping:  true,
 }
-\\\
+```
 
 
 ### Configuration Options

@@ -117,9 +117,9 @@ var perUnitMap = map[string]string{
 //	}
 //	// result == "http_server_duration_seconds"
 type MetricNamer struct {
-	Namespace            string
-	WithMetricSuffixes   bool
-	UTF8Allowed          bool
+	Namespace          string
+	WithMetricSuffixes bool
+	UTF8Allowed        bool
 	// LegacyUnitMapping selects the pre-correction UCUM unit mappings (e.g.
 	// "TiBy" -> "tibibytes" instead of the spec-correct "tebibytes"). The
 	// default value (false) uses the spec-correct mappings. Set to true to
@@ -130,13 +130,11 @@ type MetricNamer struct {
 // NewMetricNamer creates a MetricNamer with the specified namespace (can be
 // blank) and the requested Translation Strategy.
 func NewMetricNamer(namespace string, strategy TranslationStrategyOption) MetricNamer {
-	mn := MetricNamer{
-		Namespace:            namespace,
-		WithMetricSuffixes:   strategy.ShouldAddSuffixes(),
-		UTF8Allowed:          !strategy.ShouldEscape(),
-		UpdatedMetricMapping: strategy.ShouldUseUpdatedSuffixes(),
+	return MetricNamer{
+		Namespace:          namespace,
+		WithMetricSuffixes: strategy.ShouldAddSuffixes(),
+		UTF8Allowed:        !strategy.ShouldEscape(),
 	}
-	return mn
 }
 
 // Metric is a helper struct that holds information about a metric.

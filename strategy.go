@@ -63,9 +63,9 @@ var (
 // names be escaped.
 func (o TranslationStrategyOption) ShouldEscape() bool {
 	switch o {
-	case UnderscoreEscapingWithSuffixes, UnderscoreEscapingWithoutSuffixes, UnderscoreEscapingWithUpdatedSuffixes:
+	case UnderscoreEscapingWithSuffixes, UnderscoreEscapingWithoutSuffixes:
 		return true
-	case NoTranslation, NoUTF8EscapingWithSuffixes, NoUTF8EscapingWithUpdatedSuffixes:
+	case NoTranslation, NoUTF8EscapingWithSuffixes:
 		return false
 	default:
 		return false
@@ -76,20 +76,9 @@ func (o TranslationStrategyOption) ShouldEscape() bool {
 // strategy should have suffixes added.
 func (o TranslationStrategyOption) ShouldAddSuffixes() bool {
 	switch o {
-	case UnderscoreEscapingWithSuffixes, NoUTF8EscapingWithSuffixes, UnderscoreEscapingWithUpdatedSuffixes, NoUTF8EscapingWithUpdatedSuffixes:
+	case UnderscoreEscapingWithSuffixes, NoUTF8EscapingWithSuffixes:
 		return true
 	case UnderscoreEscapingWithoutSuffixes, NoTranslation:
-		return false
-	default:
-		return false
-	}
-}
-
-func (o TranslationStrategyOption) ShouldUseUpdatedSuffixes() bool {
-	switch o {
-	case NoUTF8EscapingWithUpdatedSuffixes, UnderscoreEscapingWithUpdatedSuffixes:
-		return true
-	case NoUTF8EscapingWithSuffixes, UnderscoreEscapingWithSuffixes, UnderscoreEscapingWithoutSuffixes, NoTranslation:
 		return false
 	default:
 		return false
