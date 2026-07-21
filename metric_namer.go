@@ -41,12 +41,15 @@ var unitMap = map[string]string{
 	"us":  "microseconds",
 	"ns":  "nanoseconds",
 
-	// Bytes
+	// Bytes. UCUM uses lowercase `k` for the SI kilo prefix (uppercase `K` is
+	// kelvin); `KBy` is accepted as a backwards-compatible alias for producers
+	// that adopted the (incorrect) uppercase form this library historically used.
 	"By":   "bytes",
 	"KiBy": "kibibytes",
 	"MiBy": "mebibytes",
 	"GiBy": "gibibytes",
-	"TiBy": "tibibytes",
+	"TiBy": "tebibytes",
+	"kBy":  "kilobytes",
 	"KBy":  "kilobytes",
 	"MBy":  "megabytes",
 	"GBy":  "gigabytes",
@@ -65,6 +68,19 @@ var unitMap = map[string]string{
 	"Hz":  "hertz",
 	"1":   "",
 	"%":   "percent",
+}
+
+// legacyUnitMap holds the unit mappings this library shipped before the
+// TiBy/kBy corrections. Selected when MetricNamer.LegacyUnitMapping or
+// UnitNamer.LegacyUnitMapping is true.
+var legacyUnitMap = map[string]string{
+	"TiBy": "tibibytes",
+}
+
+// legacyUnitExclusions are units that map in unitMap but were not present in
+// the historical map; in legacy mode they fall through unchanged.
+var legacyUnitExclusions = map[string]struct{}{
+	"kBy": {},
 }
 
 // The map that translates the "per" unit.
@@ -104,6 +120,11 @@ type MetricNamer struct {
 	Namespace          string
 	WithMetricSuffixes bool
 	UTF8Allowed        bool
+	// LegacyUnitMapping selects the pre-correction UCUM unit mappings (e.g.
+	// "TiBy" -> "tibibytes" instead of the spec-correct "tebibytes"). The
+	// default value (false) uses the spec-correct mappings. Set to true to
+	// preserve metric names produced by older versions of this library.
+	LegacyUnitMapping bool
 }
 
 // NewMetricNamer creates a MetricNamer with the specified namespace (can be
@@ -190,7 +211,7 @@ func (mn *MetricNamer) buildCompliantMetricName(name, unit string, metricType Me
 
 	// Full normalization following standard Prometheus naming conventions
 	if mn.WithMetricSuffixes {
-		normalizedName = normalizeName(name, unit, metricType, mn.Namespace)
+		normalizedName = normalizeName(name, unit, metricType, mn.Namespace, mn.LegacyUnitMapping)
 		return
 	}
 
@@ -234,7 +255,7 @@ func replaceInvalidMetricChar(r rune) rune {
 }
 
 // Build a normalized name for the specified metric.
-func normalizeName(name, unit string, metricType MetricType, namespace string) string {
+func normalizeName(name, unit string, metricType MetricType, namespace string, legacyUnitMapping bool) string {
 	// Split metric name into "tokens" (of supported metric name runes).
 	// Note that this has the side effect of replacing multiple consecutive underscores with a single underscore.
 	// This is part of the OTel to Prometheus specification: https://github.com/open-telemetry/opentelemetry-specification/blob/v1.38.0/specification/compatibility/prometheus_and_openmetrics.md#otlp-metric-points-to-prometheus.
@@ -243,7 +264,7 @@ func normalizeName(name, unit string, metricType MetricType, namespace string) s
 		func(r rune) bool { return !isValidCompliantMetricChar(r) },
 	)
 
-	mainUnitSuffix, perUnitSuffix := buildUnitSuffixes(unit)
+	mainUnitSuffix, perUnitSuffix := buildUnitSuffixes(unit, legacyUnitMapping)
 	nameTokens = addUnitTokens(nameTokens, cleanUpUnit(mainUnitSuffix), cleanUpUnit(perUnitSuffix))
 
 	// Append _total for Counters
@@ -347,7 +368,7 @@ func (mn *MetricNamer) buildMetricName(inputName, unit string, metricType Metric
 			}()
 		}
 
-		mainUnitSuffix, perUnitSuffix := buildUnitSuffixes(unit)
+		mainUnitSuffix, perUnitSuffix := buildUnitSuffixes(unit, mn.LegacyUnitMapping)
 		if perUnitSuffix != "" {
 			name = trimSuffixAndDelimiter(name, perUnitSuffix)
 			defer func() {
