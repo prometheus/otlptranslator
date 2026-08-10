@@ -82,9 +82,7 @@ func unitMapGetOrDefault(unit string, legacy bool) string {
 		if promUnit, ok := legacyUnitMap[unit]; ok {
 			return promUnit
 		}
-		if _, excluded := legacyUnitExclusions[unit]; excluded {
-			return unit
-		}
+		return unit
 	}
 	if promUnit, ok := unitMap[unit]; ok {
 		return promUnit

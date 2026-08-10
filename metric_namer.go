@@ -73,14 +73,15 @@ var unitMap = map[string]string{
 // legacyUnitMap holds the unit mappings this library shipped before the
 // TiBy/kBy corrections. Selected when MetricNamer.LegacyUnitMapping or
 // UnitNamer.LegacyUnitMapping is true.
-var legacyUnitMap = map[string]string{
-	"TiBy": "tibibytes",
-}
+var legacyUnitMap map[string]string
 
-// legacyUnitExclusions are units that map in unitMap but were not present in
-// the historical map; in legacy mode they fall through unchanged.
-var legacyUnitExclusions = map[string]struct{}{
-	"kBy": {},
+func init() {
+	legacyUnitMap = make(map[string]string, len(unitMap))
+	for k, v := range unitMap {
+		legacyUnitMap[k] = v
+	}
+	legacyUnitMap["TiBy"] = "tibibytes"
+	delete(legacyUnitMap, "kBy")
 }
 
 // The map that translates the "per" unit.

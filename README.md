@@ -112,7 +112,7 @@ unitNamer.Build("1")           // "" (dimensionless)
 
 This library now uses the spec-correct UCUM unit suffixes by default. Two mappings changed compared to earlier releases:
 
-- `TiBy` → `tebibytes` (previously `tibibytes` — `tebi-` is the SI binary prefix; the older spelling was a misspelling).
+- `TiBy` → `tebibytes` (previously `tibibytes` — `tebi-` is the IEC binary prefix; the older spelling was a misspelling).
 - `kBy` → `kilobytes` is **newly** recognised (previously not mapped). `KBy` continues to map to `kilobytes` as before, for backwards compatibility.
 
 **Behavior change for existing consumers**: dashboards, alerts, and recording rules that reference `*_tibibytes` will silently stop receiving new datapoints once your Prometheus / OTel Collector deployment picks up this library version.
