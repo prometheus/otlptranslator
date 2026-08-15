@@ -107,6 +107,7 @@ unitNamer.Build("s")           // seconds
 unitNamer.Build("By")          // bytes
 unitNamer.Build("requests/s")  // requests_per_second
 unitNamer.Build("1")           // "" (dimensionless)
+```
 
 ### Migration: Pre-correction unit suffixes
 

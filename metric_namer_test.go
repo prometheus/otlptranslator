@@ -569,7 +569,7 @@ func TestMetricNamer_Build(t *testing.T) {
 			wantUnitName:   "per_second",
 		},
 		{
-			name: "utf8 metric with TiBy under default unit mapping",
+			name: "utf8 metric with tebibytes unit mapping",
 			namer: MetricNamer{
 				UTF8Allowed:        true,
 				WithMetricSuffixes: true,
@@ -583,7 +583,7 @@ func TestMetricNamer_Build(t *testing.T) {
 			wantUnitName:   "tebibytes",
 		},
 		{
-			name: "utf8 metric with TiBy under legacy unit mapping",
+			name: "utf8 TiBy metric with legacy unit mapping",
 			namer: MetricNamer{
 				UTF8Allowed:        true,
 				WithMetricSuffixes: true,
@@ -598,7 +598,7 @@ func TestMetricNamer_Build(t *testing.T) {
 			wantUnitName:   "tibibytes",
 		},
 		{
-			name: "utf8 metric with kBy under legacy unit mapping passes through unmapped",
+			name: "utf8 kBy metric with legacy unit mapping passes through unmapped",
 			namer: MetricNamer{
 				UTF8Allowed:        true,
 				WithMetricSuffixes: true,
@@ -835,7 +835,7 @@ func TestMetricNamer_Build(t *testing.T) {
 			wantUnitName:   "gibibytes",
 		},
 		{
-			name: "metric with tibibytes unit",
+			name: "TiBy metric with legacy unit mapping",
 			namer: MetricNamer{
 				UTF8Allowed:        false,
 				WithMetricSuffixes: true,
@@ -850,7 +850,21 @@ func TestMetricNamer_Build(t *testing.T) {
 			wantUnitName:   "tibibytes",
 		},
 		{
-			name: "metric with kilobytes unit",
+			name: "metric with tebibytes unit",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "capacity",
+				Unit: "TiBy",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "capacity_tebibytes",
+			wantUnitName:   "tebibytes",
+		},
+		{
+			name: "metric with KBy unit",
 			namer: MetricNamer{
 				UTF8Allowed:        false,
 				WithMetricSuffixes: true,
@@ -863,9 +877,8 @@ func TestMetricNamer_Build(t *testing.T) {
 			wantMetricName: "transfer_kilobytes",
 			wantUnitName:   "kilobytes",
 		},
-
 		{
-			name: "metric with kilobytes unit with flag",
+			name: "metric with kBy unit",
 			namer: MetricNamer{
 				UTF8Allowed:        false,
 				WithMetricSuffixes: true,
