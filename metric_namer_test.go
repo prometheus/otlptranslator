@@ -864,11 +864,6 @@ func TestMetricNamer_Build(t *testing.T) {
 			wantUnitName:   "tebibytes",
 		},
 		{
-			name: "metric with KBy unit",
-			namer: MetricNamer{
-				UTF8Allowed:        false,
-				WithMetricSuffixes: true,
-		{
 			name: "metric with kBy under default unit mapping",
 			namer: MetricNamer{
 				UTF8Allowed:        false,
