@@ -8,7 +8,6 @@ Part of the [Prometheus](https://prometheus.io/) ecosystem, following the [OpenT
 
 - **Metric Name and Label Translation**: Convert OTLP metric names and attributes to Prometheus-compliant format
 - **Unit Handling**: Translate OTLP units to Prometheus unit conventions, using spec-correct UCUM mappings by default with an opt-out (`LegacyUnitMapping`) for callers pinned to pre-correction names
-- 
 - **Type-Aware Suffixes**: Optionally append `_total`, `_ratio` based on metric type
 - **Namespace Support**: Add configurable namespace prefixes
 - **UTF-8 Support**: Choose between Prometheus legacy scheme compliant metric/label names (`[a-zA-Z0-9:_]`) or untranslated metric/label names
@@ -125,7 +124,6 @@ namer := otlptranslator.MetricNamer{
     LegacyUnitMapping:  true,
 }
 ```
-
 
 ### Configuration Options
 

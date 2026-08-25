@@ -868,6 +868,42 @@ func TestMetricNamer_Build(t *testing.T) {
 			namer: MetricNamer{
 				UTF8Allowed:        false,
 				WithMetricSuffixes: true,
+		{
+			name: "metric with kBy under default unit mapping",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "transfer",
+				Unit: "kBy",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "transfer_kilobytes",
+			wantUnitName:   "kilobytes",
+		},
+		{
+			name: "metric with kBy under legacy unit mapping falls through unmapped",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+				LegacyUnitMapping:  true,
+			},
+			metric: Metric{
+				Name: "transfer",
+				Unit: "kBy",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "transfer_kBy",
+			wantUnitName:   "kBy",
+		},
+		{
+			// KBy is preserved in unitMap (and legacyUnitMap) for backwards
+			// compatibility with producers that used non-spec casing.
+			name: "metric with KBy under default unit mapping",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
 			},
 			metric: Metric{
 				Name: "transfer",
@@ -878,14 +914,15 @@ func TestMetricNamer_Build(t *testing.T) {
 			wantUnitName:   "kilobytes",
 		},
 		{
-			name: "metric with kBy unit",
+			name: "metric with KBy under legacy unit mapping",
 			namer: MetricNamer{
 				UTF8Allowed:        false,
 				WithMetricSuffixes: true,
+				LegacyUnitMapping:  true,
 			},
 			metric: Metric{
 				Name: "transfer",
-				Unit: "kBy",
+				Unit: "KBy",
 				Type: MetricTypeGauge,
 			},
 			wantMetricName: "transfer_kilobytes",
