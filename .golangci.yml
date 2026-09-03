@@ -9,7 +9,8 @@ formatters:
         - default
         - prefix(github.com/prometheus/otlptranslator)
     gofumpt:
-      extra-rules: true
+      extra:
+        group-params: true
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0

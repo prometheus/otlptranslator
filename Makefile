@@ -4,7 +4,7 @@ FIRST_GOPATH := $(firstword $(subst :, ,$(shell $(GO) env GOPATH)))
 SKIP_GOLANGCI_LINT :=
 GOLANGCI_LINT :=
 GOLANGCI_LINT_OPTS ?=
-GOLANGCI_LINT_VERSION ?= v2.4.0
+GOLANGCI_LINT_VERSION ?= v2.13.1
 
 # golangci-lint only supports linux, darwin and windows platforms on i386/amd64/arm64.
 # windows isn't included here because of the path separator being different.
