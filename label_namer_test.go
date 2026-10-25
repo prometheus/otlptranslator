@@ -287,3 +287,150 @@ func TestLabelNamerBuildZeroAlloc(t *testing.T) {
 		t.Fatalf("Build allocated %f times per run on the fast path, want 0", got)
 	}
 }
+
+func TestLabelNamerCacheHit(t *testing.T) {
+	namer := &LabelNamer{CacheDisabled: false}
+
+	result1, err := namer.Build("http.method")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result1 != "http_method" {
+		t.Errorf("expected http_method, got %s", result1)
+	}
+
+	// Same label should hit cache
+	result2, err := namer.Build("http.method")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result2 != "http_method" {
+		t.Errorf("expected http_method, got %s", result2)
+	}
+}
+
+func TestLabelNamerCacheDisabled(t *testing.T) {
+	namer := &LabelNamer{CacheDisabled: true}
+
+	result, err := namer.Build("http.method")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result != "http_method" {
+		t.Errorf("expected http_method, got %s", result)
+	}
+
+	result2, err := namer.Build("http.method")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result2 != "http_method" {
+		t.Errorf("expected http_method, got %s", result2)
+	}
+}
+
+func TestLabelNamerCacheMemorySafety(t *testing.T) {
+	// Create a label that doesn't need transformation
+	label := "already_valid_label"
+	namer := &LabelNamer{CacheDisabled: false}
+
+	result, err := namer.Build(label)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result != label {
+		t.Errorf("expected %s, got %s", label, result)
+	}
+}
+
+func TestLabelNamerCacheEnabledDefault(t *testing.T) {
+	// Default LabelNamer{} should have cache enabled
+	namer := &LabelNamer{}
+
+	result1, err := namer.Build("http.method")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result1 != "http_method" {
+		t.Errorf("expected http_method, got %s", result1)
+	}
+
+	// Second call should hit cache
+	result2, err := namer.Build("http.method")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result2 != "http_method" {
+		t.Errorf("expected http_method, got %s", result2)
+	}
+}
+
+// TestLabelNamerCacheOptionsChanged verifies that results cached under one set
+// of options are not returned after the options change.
+func TestLabelNamerCacheOptionsChanged(t *testing.T) {
+	tests := []struct {
+		name     string
+		preserve bool
+		sanitize bool
+		label    string
+		change   func(*LabelNamer)
+		initial  string
+		changed  string
+	}{
+		{
+			name:    "enable PreserveMultipleUnderscores",
+			label:   "http..method",
+			change:  func(ln *LabelNamer) { ln.PreserveMultipleUnderscores = true },
+			initial: "http_method",
+			changed: "http__method",
+		},
+		{
+			name:     "disable PreserveMultipleUnderscores",
+			preserve: true,
+			label:    "http..method",
+			change:   func(ln *LabelNamer) { ln.PreserveMultipleUnderscores = false },
+			initial:  "http__method",
+			changed:  "http_method",
+		},
+		{
+			name:    "enable UnderscoreLabelSanitization",
+			label:   "_http.method",
+			change:  func(ln *LabelNamer) { ln.UnderscoreLabelSanitization = true },
+			initial: "_http_method",
+			changed: "key_http_method",
+		},
+		{
+			name:     "disable UnderscoreLabelSanitization",
+			sanitize: true,
+			label:    "_http.method",
+			change:   func(ln *LabelNamer) { ln.UnderscoreLabelSanitization = false },
+			initial:  "key_http_method",
+			changed:  "_http_method",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			namer := &LabelNamer{
+				PreserveMultipleUnderscores: tt.preserve,
+				UnderscoreLabelSanitization: tt.sanitize,
+			}
+
+			got, err := namer.Build(tt.label)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != tt.initial {
+				t.Fatalf("Build(%q) = %q before change, want %q", tt.label, got, tt.initial)
+			}
+
+			tt.change(namer)
+			got, err = namer.Build(tt.label)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != tt.changed {
+				t.Errorf("Build(%q) = %q after change, want %q", tt.label, got, tt.changed)
+			}
+		})
+	}
+}
