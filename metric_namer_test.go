@@ -1101,7 +1101,7 @@ func TestMetricNamer_Build(t *testing.T) {
 			},
 			metric: Metric{
 				Name: "requests",
-				Unit: "1/m",
+				Unit: "1/min",
 				Type: MetricTypeGauge,
 			},
 			wantMetricName: "requests_per_minute",
@@ -1143,7 +1143,7 @@ func TestMetricNamer_Build(t *testing.T) {
 			},
 			metric: Metric{
 				Name: "reports",
-				Unit: "1/w",
+				Unit: "1/wk",
 				Type: MetricTypeGauge,
 			},
 			wantMetricName: "reports_per_week",
@@ -1168,6 +1168,80 @@ func TestMetricNamer_Build(t *testing.T) {
 			namer: MetricNamer{
 				UTF8Allowed:        false,
 				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "renewals",
+				Unit: "1/a",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "renewals_per_year",
+			wantUnitName:   "per_year",
+		},
+		{
+			name: "metric with per meter unit is not translated as per minute",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+			},
+			metric: Metric{
+				Name: "transfer",
+				Unit: "By/m",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "transfer_bytes_per_m",
+			wantUnitName:   "bytes_per_m",
+		},
+		{
+			name: "metric with per minute unit under legacy unit mapping",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+				LegacyUnitMapping:  true,
+			},
+			metric: Metric{
+				Name: "requests",
+				Unit: "1/m",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "requests_per_minute",
+			wantUnitName:   "per_minute",
+		},
+		{
+			name: "metric with UCUM per minute unit under legacy unit mapping passes through unmapped",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+				LegacyUnitMapping:  true,
+			},
+			metric: Metric{
+				Name: "requests",
+				Unit: "1/min",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "requests_per_min",
+			wantUnitName:   "per_min",
+		},
+		{
+			name: "metric with per week unit under legacy unit mapping",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+				LegacyUnitMapping:  true,
+			},
+			metric: Metric{
+				Name: "reports",
+				Unit: "1/w",
+				Type: MetricTypeGauge,
+			},
+			wantMetricName: "reports_per_week",
+			wantUnitName:   "per_week",
+		},
+		{
+			name: "metric with per year unit under legacy unit mapping",
+			namer: MetricNamer{
+				UTF8Allowed:        false,
+				WithMetricSuffixes: true,
+				LegacyUnitMapping:  true,
 			},
 			metric: Metric{
 				Name: "renewals",

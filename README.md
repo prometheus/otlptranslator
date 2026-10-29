@@ -110,10 +110,11 @@ unitNamer.Build("1")           // "" (dimensionless)
 
 ### Migration: Pre-correction unit suffixes
 
-This library now uses the spec-correct UCUM unit suffixes by default. Two mappings changed compared to earlier releases:
+This library now uses the spec-correct UCUM unit suffixes by default. These mappings changed compared to earlier releases:
 
 - `TiBy` → `tebibytes` (previously `tibibytes` — `tebi-` is the IEC binary prefix; the older spelling was a misspelling).
 - `kBy` → `kilobytes` is **newly** recognised (previously not mapped). `KBy` continues to map to `kilobytes` as before, for backwards compatibility.
+- "Per" units use the UCUM codes `min` (minute), `wk` (week) and `a` (year), so `By/min` → `bytes_per_minute` (previously `bytes_per_min`). The non-UCUM codes `m`, `w` and `y` are no longer translated, so `By/m` (bytes per meter) → `bytes_per_m` (previously `bytes_per_minute`).
 
 **Behavior change for existing consumers**: dashboards, alerts, and recording rules that reference `*_tibibytes` will silently stop receiving new datapoints once your Prometheus / OTel Collector deployment picks up this library version.
 To preserve the pre-correction names while you migrate, opt in to the legacy mapping (combine with `UTF8Allowed: true` if your callers use UTF-8 metric names):

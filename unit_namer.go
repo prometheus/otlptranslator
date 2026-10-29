@@ -26,9 +26,10 @@ import "strings"
 type UnitNamer struct {
 	UTF8Allowed bool
 	// LegacyUnitMapping selects the pre-correction UCUM unit mappings (e.g.
-	// "TiBy" -> "tibibytes" instead of the spec-correct "tebibytes"). The
-	// default value (false) uses the spec-correct mappings. Set to true to
-	// preserve metric names produced by older versions of this library.
+	// "TiBy" -> "tibibytes" instead of the spec-correct "tebibytes", and "/m"
+	// -> "per_minute" instead of "/min"). The default value (false) uses the
+	// spec-correct mappings. Set to true to preserve metric names produced by
+	// older versions of this library.
 	LegacyUnitMapping bool
 }
 
@@ -92,8 +93,12 @@ func unitMapGetOrDefault(unit string, legacy bool) string {
 
 // Retrieve the Prometheus "per" unit corresponding to the specified "per" unit.
 // Returns the specified unit if not found in perUnitMap.
-func perUnitMapGetOrDefault(perUnit string) string {
-	if promPerUnit, ok := perUnitMap[perUnit]; ok {
+func perUnitMapGetOrDefault(perUnit string, legacy bool) string {
+	m := perUnitMap
+	if legacy {
+		m = legacyPerUnitMap
+	}
+	if promPerUnit, ok := m[perUnit]; ok {
 		return promPerUnit
 	}
 	return perUnit
@@ -119,7 +124,7 @@ func buildUnitSuffixes(unit string, legacyUnitMapping bool) (mainUnitSuffix, per
 		if len(unitTokens) > 1 && unitTokens[1] != "" {
 			perUnitOTel := strings.TrimSpace(unitTokens[1])
 			if perUnitOTel != "" && !strings.ContainsAny(perUnitOTel, "{}") {
-				perUnitSuffix = perUnitMapGetOrDefault(perUnitOTel)
+				perUnitSuffix = perUnitMapGetOrDefault(perUnitOTel, legacyUnitMapping)
 			}
 			if perUnitSuffix != "" {
 				perUnitSuffix = "per_" + perUnitSuffix

@@ -86,7 +86,23 @@ func init() {
 
 // The map that translates the "per" unit.
 // Example: s => per second (singular).
+// Keys are UCUM codes: "min" is minute ("m" is meter), "wk" is week and "a" is
+// year ("w" is not a UCUM unit and "y" is the yocto- prefix).
 var perUnitMap = map[string]string{
+	"s":   "second",
+	"min": "minute",
+	"h":   "hour",
+	"d":   "day",
+	"wk":  "week",
+	"mo":  "month",
+	"a":   "year",
+}
+
+// legacyPerUnitMap holds the "per" unit mappings this library shipped before
+// the UCUM corrections, which used "m", "w" and "y" for minute, week and year.
+// Selected when MetricNamer.LegacyUnitMapping or UnitNamer.LegacyUnitMapping is
+// true.
+var legacyPerUnitMap = map[string]string{
 	"s":  "second",
 	"m":  "minute",
 	"h":  "hour",
@@ -122,9 +138,10 @@ type MetricNamer struct {
 	WithMetricSuffixes bool
 	UTF8Allowed        bool
 	// LegacyUnitMapping selects the pre-correction UCUM unit mappings (e.g.
-	// "TiBy" -> "tibibytes" instead of the spec-correct "tebibytes"). The
-	// default value (false) uses the spec-correct mappings. Set to true to
-	// preserve metric names produced by older versions of this library.
+	// "TiBy" -> "tibibytes" instead of the spec-correct "tebibytes", and "/m"
+	// -> "per_minute" instead of "/min"). The default value (false) uses the
+	// spec-correct mappings. Set to true to preserve metric names produced by
+	// older versions of this library.
 	LegacyUnitMapping bool
 }
 
